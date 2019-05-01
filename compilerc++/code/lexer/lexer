@@ -1,0 +1,95 @@
+%class-name="Lexer"
+%x COMMENT
+
+ALPHA            [a-zA-Z]
+DIGIT            [0-9]
+EXPONENT         [eE][+-]?{DIGIT}+
+PRINTABLE        [ -!#-&(-\[\]-~]
+ESCAPE_SEQ       \\[ntr0\\\'\"]
+SINGLE_CHARACTER {PRINTABLE}|{ESCAPE_SEQ}
+ 
+
+%%
+
+
+"and"       return Parser::AND;
+"array"     return Parser::ARRAY;
+"begin"     return Parser::BEGIN;
+"boolean"   return Parser::BOOLEAN;
+"char"      return Parser::CHAR;
+"dispose"   return Parser::DISPOSE;
+"dive"      return Parser::INT_DIV;
+"do"        return Parser::DO;
+"else"      return Parser::ELSE;
+"end"       return Parser::END;
+"false"     return Parser::FALSE;
+"forward"   return Parser::FORWARD;
+"function"  return Parser::FUNCTION;
+"goto"      return Parser::GOTO;
+"if"        return Parser::IF;
+"integer"   return Parser::INTEGER;
+"label"     return Parser::LABEL;
+"mod"       return Parser::MOD;
+"new"       return Parser::NEW;
+"nil"       return Parser::NIL;
+"not"       return Parser::NOT;
+"of"        return Parser::OF;
+"or"        return Parser::OR;
+"procedure" return Parser::PROCEDURE;
+"program"   return Parser::PROGRAM;
+"real"      return Parser::REAL;
+"result"    return Parser::RESULT;
+"return"    return Parser::RETURN;
+"then"      return Parser::THEN;
+"true"      return Parser::TRUE;
+"var"       return Parser::VAR;
+"while"     return Parser::WHILE;
+
+"="         return Parser::EQUAL;
+">"         return Parser::GT;
+"<"         return Parser::LT;
+"<>"        return Parser::NOT_EQUAL;
+">="        return Parser::GE;
+"<="        return Parser::LE;
+"+"         return Parser::PLUS;
+"-"         return Parser::MINUS;
+"*"         return Parser::MUL;
+"/"         return Parser::DIV;
+"^"         return Parser::DEREF;
+"@"         return Parser::ADDR;
+":="        return Parser::ASSIGN;
+";"         return Parser::END_STMT;
+"."         return Parser::DOT;
+"("         return Parser::OP_PAR;
+")"         return Parser::CLOS_PAR;
+":"         return Parser::COLON;
+","         return Parser::COMMA;
+"["         return Parser::OP_BRACK;
+"]"         return Parser::CLOS_BRACK;
+
+{ALPHA}({ALPHA}|{DIGIT}|_)*   return Parser::IDENTIFIER;
+{DIGIT}+                      return Parser::INT_CONST;
+{DIGIT}+\.{DIGIT}+{EXPONENT}? return Parser::REAL_CONST;
+\'{SINGLE_CHARACTER}?\'       return Parser::SINGLE_CHAR;
+\"{SINGLE_CHARACTER}*\"       return Parser::STRING_LITERAL;
+
+[ \t\r\n]          /* nothing */
+
+"(*"             begin(StartCondition__::COMMENT);
+<COMMENT>"*)"    begin(StartCondition__::INITIAL);
+<COMMENT>"*"     /* nothing */
+<COMMENT>[^*]+   /* nothing */
+<COMMENT><<EOF>> {
+                     std::cerr << "ERROR: Unexpected end of "
+                               << "file within comment section\n"; 
+                     exit(1);
+                 }
+
+<<EOF>>          return Parser::EOF_T;
+.                {
+                     std::stringstream ss;
+                     ss << "Illegal character with code " 
+                        << (matched()[0] >= 32 ? matched()[0] : '?');
+                     std::cerr << "ERROR: " << ss.str() << '\n';
+                     exit(1);
+                 }

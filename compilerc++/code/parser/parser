@@ -1,0 +1,75 @@
+%flex
+%scanner                ../lexer/Lexer.h
+%scanner-class-name     Lexer
+
+%token      EOF_T
+            AND
+            ARRAY
+            BEGIN
+            BOOLEAN
+            CHAR
+            DISPOSE
+            INT_DIV
+            DO
+            ELSE
+            END
+            FALSE
+            FORWARD
+            FUNCTION
+            GOTO
+            IF
+            INTEGER
+            LABEL
+            MOD
+            NEW
+            NIL
+            NOT
+            OF
+            OR
+            PROCEDURE
+            PROGRAM
+            REAL
+            RESULT
+            RETURN
+            THEN
+            TRUE
+            VAR
+            WHILE
+            EQUAL
+            GT
+            LT
+            NOT_EQUAL
+            GE
+            LE
+            PLUS
+            MINUS
+            MUL
+            DIV
+            DEREF
+            ADDR
+            ASSIGN
+            END_STMT
+            DOT
+            OP_PAR
+            CLOS_PAR
+            COLON
+            COMMA
+            OP_BRACK
+            CLOS_BRACK
+            IDENTIFIER
+            INT_CONST
+            REAL_CONST
+            SINGLE_CHAR
+            STRING_LITERAL
+
+%left PLUS MINUS
+%left MUL DIV INT_DIV MOD
+
+%start PROGRAM
+
+%%
+
+PROGRAM:
+    PROGRAM IDENTIFIER
+|   body '.'
+;
