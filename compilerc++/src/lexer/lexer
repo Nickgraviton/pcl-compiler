@@ -55,10 +55,10 @@ SINGLE_CHARACTER {PRINTABLE}|{ESCAPE_SEQ}
 "-"         return Parser::MINUS;
 "*"         return Parser::MUL;
 "/"         return Parser::DIV;
-"^"         return Parser::DEREF;
-"@"         return Parser::ADDR;
+"^"         return Parser::CARET;
+"@"         return Parser::AT;
 ":="        return Parser::ASSIGN;
-";"         return Parser::END_STMT;
+";"         return Parser::SEMI_COLON;
 "."         return Parser::DOT;
 "("         return Parser::OP_PAR;
 ")"         return Parser::CLOS_PAR;
@@ -70,7 +70,7 @@ SINGLE_CHARACTER {PRINTABLE}|{ESCAPE_SEQ}
 {ALPHA}({ALPHA}|{DIGIT}|_)*   return Parser::IDENTIFIER;
 {DIGIT}+                      return Parser::INT_CONST;
 {DIGIT}+\.{DIGIT}+{EXPONENT}? return Parser::REAL_CONST;
-\'{SINGLE_CHARACTER}?\'       return Parser::SINGLE_CHAR;
+\'{SINGLE_CHARACTER}?\'       return Parser::CHAR_CONST;
 \"{SINGLE_CHARACTER}*\"       return Parser::STRING_LITERAL;
 
 [ \t\r\n]          /* nothing */
