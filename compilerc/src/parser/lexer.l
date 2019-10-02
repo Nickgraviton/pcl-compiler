@@ -6,8 +6,7 @@
 #include <string>
 #include <sstream>
 int line_num = 1;
-yyFlexLexer lexer;
-void ERROR(std::string msg);
+void yyerror(std::string msg);
 
 #define T_eof            0
 #define T_and            1001
@@ -154,31 +153,21 @@ single_character {printable}|{escape_seq}
 <COMMENT>\n      { ++line_num;     }
 <COMMENT>"*"     { /* nothing */   }
 <COMMENT>[^*\n]+ { /* nothing */   }
-<COMMENT><<EOF>> { ERROR("Unexpected end of file within comment section"); 
+<COMMENT><<EOF>> { yyerror("Unexpected end of file within comment section"); 
                    exit(1);        }
 
 <<EOF>>          { return T_eof;   }
 .                { std::stringstream ss;
                    ss << "Illegal character with code " 
-                      << (lexer.YYText()[0] >= 32 ? lexer.YYText()[0] : '?');
-                   ERROR(ss.str());
+                      << (yytext[0] >= 32 ? yytext[0] : '?');
+                   yyerror(ss.str());
                    exit(1);        }
 
 
 %%
 
-void ERROR(std::string msg) {
+void yyerror(std::string msg) {
     std::cerr << "Error: \"" << msg 
               << "\" in line " << line_num
               << '\n';
-}
-
-int main() {
-    int token;
-    do {
-        token = lexer.yylex();
-        std::cout << "token=" << token
-                  << ", lexeme=\"" << lexer.YYText()
-                  << "\"\n";
-    } while (token != T_eof);
 }

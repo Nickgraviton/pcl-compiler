@@ -9,19 +9,19 @@ CC=g++
 CFLAGS=-Wall
 RM=rm -f
 
-compiler: compiler.lex.o compiler.tab.o symbol.o symbolc.o
-	$(CC) $(CFLAGS) -o $@ $^
 
-compiler.lex.cc: compiler.l compiler.tab.h
-	flex --c++ -t $< > $@
+all: lexer
 
-compiler.tab.c compiler.tab.h: compiler.y
-	bison -dv $<
+lexer.cpp: lexer.l
+	flex -s -t $< > $@
+lexer: lexer.cpp
+	$(CC) $(FLAGS) $< -o $@
+
 
 .PHONY: clean distclean
 
 clean:
-	$(RM) *.o *.cc compiler.tab.* core
+	$(RM) lexer.cpp
 
 distclean: clean
-	$(RM) compiler
+	$(RM) lexer
