@@ -1,6 +1,4 @@
 %flex
-%scanner                ../lexer/Lexer.h
-%scanner-class-name     Lexer
 
 %token    EOF_T
 %token    ARRAY OF

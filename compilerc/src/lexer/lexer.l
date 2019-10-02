@@ -84,79 +84,79 @@ single_character {printable}|{escape_seq}
 %%
 
 
-"and"       { return T_and;        }
-"array"     { return T_array;      }
-"begin"     { return T_begin;      }
-"boolean"   { return T_boolean;    }
-"char"      { return T_char;       }
-"dispose"   { return T_dispose;    }
-"dive"      { return T_int_div;    }
-"do"        { return T_do;         }
-"else"      { return T_else;       }
-"end"       { return T_end;        }
-"false"     { return T_false;      }
-"forward"   { return T_forward;    }
-"function"  { return T_function;   }
-"goto"      { return T_goto;       }
-"if"        { return T_if;         }
-"integer"   { return T_integer;    }
-"label"     { return T_label;      }
-"mod"       { return T_mod;        }
-"new"       { return T_new;        }
-"nil"       { return T_nil;        }
-"not"       { return T_not;        }
-"of"        { return T_of;         }
-"or"        { return T_or;         }
-"procedure" { return T_procedure;  }
-"program"   { return T_program;    }
-"real"      { return T_real;       }
-"result"    { return T_result;     }
-"return"    { return T_return;     }
-"then"      { return T_then;       }
-"true"      { return T_true;       }
-"var"       { return T_var;        }
-"while"     { return T_while;      } 
+"and"       return T_and;
+"array"     return T_array;
+"begin"     return T_begin;
+"boolean"   return T_boolean;
+"char"      return T_char;
+"dispose"   return T_dispose;
+"dive"      return T_int_div;
+"do"        return T_do;
+"else"      return T_else;
+"end"       return T_end;
+"false"     return T_false;
+"forward"   return T_forward;
+"function"  return T_function;
+"goto"      return T_goto;
+"if"        return T_if;
+"integer"   return T_integer;
+"label"     return T_label;
+"mod"       return T_mod;
+"new"       return T_new;
+"nil"       return T_nil;
+"not"       return T_not;
+"of"        return T_of;
+"or"        return T_or;
+"procedure" return T_procedure;
+"program"   return T_program;
+"real"      return T_real;
+"result"    return T_result;
+"return"    return T_return;
+"then"      return T_then;
+"true"      return T_true;
+"var"       return T_var;
+"while"     return T_while;
 
-"="         { return T_equal;      }
-">"         { return T_gt;         }
-"<"         { return T_lt;         }
-"<>"        { return T_not_equal;  }
-">="        { return T_ge;         }
-"<="        { return T_le;         } 
-"+"         { return T_plus;       }
-"-"         { return T_minus;      }
-"*"         { return T_mul;        }
-"/"         { return T_div;        }
-"^"         { return T_deref;      }
-"@"         { return T_addr;       }
-":="        { return T_assign;     }
-";"         { return T_end_stmt;   }
-"."         { return T_dot;        }
-"("         { return T_op_par;     }
-")"         { return T_clos_par;   }
-":"         { return T_colon;      }
-","         { return T_comma;      }
-"["         { return T_op_brack;   }
-"]"         { return T_clos_brack; }
+"="         return T_equal;
+">"         return T_gt;
+"<"         return T_lt;
+"<>"        return T_not_equal;
+">="        return T_ge;
+"<="        return T_le;
+"+"         return T_plus;
+"-"         return T_minus;
+"*"         return T_mul;
+"/"         return T_div;
+"^"         return T_deref;
+"@"         return T_addr;
+":="        return T_assign;
+";"         return T_end_stmt;
+"."         return T_dot;
+"("         return T_op_par;
+")"         return T_clos_par;
+":"         return T_colon;
+","         return T_comma;
+"["         return T_op_brack;
+"]"         return T_clos_brack;
 
-{alpha}({alpha}|{digit}|_)*   { return T_id;             }
-{digit}+                      { return T_int_const;      }
-{digit}+\.{digit}+{exponent}? { return T_real_const;     }
-\'{single_character}?\'       { return T_character;      }
-\"{single_character}*\"       { return T_string_literal; }
+{alpha}({alpha}|{digit}|_)*   return T_id;
+{digit}+                      return T_int_const;
+{digit}+\.{digit}+{exponent}? return T_real_const;
+\'{single_character}?\'       return T_character;
+\"{single_character}*\"       return T_string_literal;
 
-[ \t\r]          { /* nothing */   }
-\n               { ++line_num;     }
+[ \t\r]          /* nothing */
+\n               ++line_num;
 
-"(*"             { BEGIN(COMMENT); }
-<COMMENT>"*)"    { BEGIN(INITIAL); }
-<COMMENT>\n      { ++line_num;     }
-<COMMENT>"*"     { /* nothing */   }
-<COMMENT>[^*\n]+ { /* nothing */   }
-<COMMENT><<EOF>> { yyerror("Unexpected end of file within comment section"); 
+"(*"             BEGIN(COMMENT);
+<COMMENT>"*)"    BEGIN(INITIAL);
+<COMMENT>\n      ++line_num;
+<COMMENT>"*"     /* nothing */
+<COMMENT>[^*\n]+ /* nothing */
+<COMMENT><<EOF>> { yyerror("Unexpected end of file within comment section");
                    exit(1);        }
 
-<<EOF>>          { return T_eof;   }
+<<EOF>>          return T_eof;
 .                { std::stringstream ss;
                    ss << "Illegal character with code " 
                       << (yytext[0] >= 32 ? yytext[0] : '?');
