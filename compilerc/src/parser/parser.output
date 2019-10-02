@@ -1,0 +1,2375 @@
+Terminals unused in grammar
+
+   EOF_T
+
+
+State 57 conflicts: 15 reduce/reduce
+State 87 conflicts: 15 shift/reduce
+State 108 conflicts: 15 shift/reduce
+State 121 conflicts: 1 shift/reduce
+
+
+Grammar
+
+    0 $accept: program $end
+
+    1 program: PROGRAM IDENTIFIER SEMI_COLON body DOT
+
+    2 body: block
+    3     | local body
+
+    4 local: VAR IDENTIFIER next_id COLON type SEMI_COLON next_var
+    5      | LABEL IDENTIFIER next_id SEMI_COLON
+    6      | header SEMI_COLON body SEMI_COLON
+    7      | FORWARD header SEMI_COLON
+
+    8 next_var: IDENTIFIER next_id COLON type SEMI_COLON next_var
+    9         | %empty
+
+   10 next_id: COMMA IDENTIFIER next_id
+   11        | %empty
+
+   12 header: PROCEDURE IDENTIFIER OP_PAR optional_arguments CLOS_PAR
+   13       | FUNCTION IDENTIFIER OP_PAR optional_arguments CLOS_PAR COLON type
+
+   14 optional_arguments: formal next_arg
+   15                   | %empty
+
+   16 next_arg: SEMI_COLON formal next_arg
+   17         | %empty
+
+   18 formal: optional_var IDENTIFIER next_id COLON type
+
+   19 optional_var: VAR
+   20             | %empty
+
+   21 type: INTEGER
+   22     | REAL
+   23     | BOOLEAN
+   24     | CHAR
+   25     | ARRAY optional_size OF type
+   26     | CARET type
+
+   27 optional_size: OP_BRACK INT_CONST CLOS_BRACK
+   28              | %empty
+
+   29 block: BEGIN_ST stmt next_stmt END
+
+   30 next_stmt: SEMI_COLON stmt next_stmt
+   31          | %empty
+
+   32 stmt: %empty
+   33     | l_value ASSIGN expr
+   34     | block
+   35     | call
+   36     | IF expr THEN stmt optional_else
+   37     | WHILE expr DO stmt
+   38     | IDENTIFIER COLON stmt
+   39     | GOTO IDENTIFIER
+   40     | RETURN
+   41     | NEW optional_expr l_value
+   42     | DISPOSE optional_bracket l_value
+
+   43 optional_else: ELSE stmt
+   44              | %empty
+
+   45 optional_expr: OP_BRACK expr CLOS_BRACK
+   46              | %empty
+
+   47 optional_bracket: OP_BRACK CLOS_BRACK
+   48                 | %empty
+
+   49 expr: l_value
+   50     | r_value
+
+   51 l_value: IDENTIFIER
+   52        | RESULT
+   53        | STRING_LITERAL
+   54        | l_value OP_BRACK expr CLOS_BRACK
+   55        | expr CARET
+   56        | OP_PAR l_value CLOS_PAR
+
+   57 r_value: const
+   58        | OP_PAR r_value CLOS_PAR
+   59        | call
+   60        | AT l_value
+   61        | unop expr
+   62        | expr binop expr
+
+   63 const: INT_CONST
+   64      | TRUE
+   65      | FALSE
+   66      | REAL_CONST
+   67      | CHAR_CONST
+   68      | NIL
+
+   69 call: IDENTIFIER OP_PAR optional_parameters CLOS_PAR
+
+   70 optional_parameters: IDENTIFIER OP_PAR expr next_expr CLOS_PAR
+   71                    | %empty
+
+   72 next_expr: COMMA expr next_expr
+   73          | %empty
+
+   74 unop: NOT
+   75     | UPLUS
+   76     | UMINUS
+
+   77 binop: PLUS
+   78      | MINUS
+   79      | MUL
+   80      | DIV
+   81      | INT_DIV
+   82      | MOD
+   83      | OR
+   84      | AND
+   85      | EQUAL
+   86      | NOT_EQUAL
+   87      | LT
+   88      | LE
+   89      | GT
+   90      | GE
+
+
+Terminals, with rules where they appear
+
+$end (0) 0
+error (256)
+EOF_T (258)
+ARRAY (259) 25
+OF (260) 25
+DISPOSE (261) 42
+NEW (262) 41
+CARET (263) 26 55
+AT (264) 60
+BEGIN_ST (265) 29
+DO (266) 37
+END (267) 29
+IF (268) 36
+THEN (269) 36
+ELSE (270) 43
+WHILE (271) 37
+AND (272) 84
+OR (273) 83
+NOT (274) 74
+UPLUS (275) 75
+UMINUS (276) 76
+BOOLEAN (277) 23
+CHAR (278) 24
+INTEGER (279) 21
+REAL (280) 22
+FORWARD (281) 7
+FUNCTION (282) 13
+PROCEDURE (283) 12
+PROGRAM (284) 1
+RESULT (285) 52
+RETURN (286) 40
+VAR (287) 4 19
+ASSIGN (288) 33
+SEMI_COLON (289) 1 4 5 6 7 8 16 30
+DOT (290) 1
+COLON (291) 4 8 13 18 38
+COMMA (292) 10 72
+LABEL (293) 5
+GOTO (294) 39
+IDENTIFIER (295) 1 4 5 8 10 12 13 18 38 39 51 69 70
+INT_CONST (296) 27 63
+REAL_CONST (297) 66
+CHAR_CONST (298) 67
+STRING_LITERAL (299) 53
+TRUE (300) 64
+FALSE (301) 65
+NIL (302) 68
+PLUS (303) 77
+MINUS (304) 78
+MUL (305) 79
+DIV (306) 80
+INT_DIV (307) 81
+MOD (308) 82
+EQUAL (309) 85
+NOT_EQUAL (310) 86
+GT (311) 89
+LT (312) 87
+GE (313) 90
+LE (314) 88
+OP_PAR (315) 12 13 56 58 69 70
+CLOS_PAR (316) 12 13 56 58 69 70
+OP_BRACK (317) 27 45 47 54
+CLOS_BRACK (318) 27 45 47 54
+
+
+Nonterminals, with rules where they appear
+
+$accept (64)
+    on left: 0
+program (65)
+    on left: 1, on right: 0
+body (66)
+    on left: 2 3, on right: 1 3 6
+local (67)
+    on left: 4 5 6 7, on right: 3
+next_var (68)
+    on left: 8 9, on right: 4 8
+next_id (69)
+    on left: 10 11, on right: 4 5 8 10 18
+header (70)
+    on left: 12 13, on right: 6 7
+optional_arguments (71)
+    on left: 14 15, on right: 12 13
+next_arg (72)
+    on left: 16 17, on right: 14 16
+formal (73)
+    on left: 18, on right: 14 16
+optional_var (74)
+    on left: 19 20, on right: 18
+type (75)
+    on left: 21 22 23 24 25 26, on right: 4 8 13 18 25 26
+optional_size (76)
+    on left: 27 28, on right: 25
+block (77)
+    on left: 29, on right: 2 34
+next_stmt (78)
+    on left: 30 31, on right: 29 30
+stmt (79)
+    on left: 32 33 34 35 36 37 38 39 40 41 42, on right: 29 30 36 37
+    38 43
+optional_else (80)
+    on left: 43 44, on right: 36
+optional_expr (81)
+    on left: 45 46, on right: 41
+optional_bracket (82)
+    on left: 47 48, on right: 42
+expr (83)
+    on left: 49 50, on right: 33 36 37 45 54 55 61 62 70 72
+l_value (84)
+    on left: 51 52 53 54 55 56, on right: 33 41 42 49 54 56 60
+r_value (85)
+    on left: 57 58 59 60 61 62, on right: 50 58
+const (86)
+    on left: 63 64 65 66 67 68, on right: 57
+call (87)
+    on left: 69, on right: 35 59
+optional_parameters (88)
+    on left: 70 71, on right: 69
+next_expr (89)
+    on left: 72 73, on right: 70 72
+unop (90)
+    on left: 74 75 76, on right: 61
+binop (91)
+    on left: 77 78 79 80 81 82 83 84 85 86 87 88 89 90, on right: 62
+
+
+State 0
+
+    0 $accept: . program $end
+
+    PROGRAM  shift, and go to state 1
+
+    program  go to state 2
+
+
+State 1
+
+    1 program: PROGRAM . IDENTIFIER SEMI_COLON body DOT
+
+    IDENTIFIER  shift, and go to state 3
+
+
+State 2
+
+    0 $accept: program . $end
+
+    $end  shift, and go to state 4
+
+
+State 3
+
+    1 program: PROGRAM IDENTIFIER . SEMI_COLON body DOT
+
+    SEMI_COLON  shift, and go to state 5
+
+
+State 4
+
+    0 $accept: program $end .
+
+    $default  accept
+
+
+State 5
+
+    1 program: PROGRAM IDENTIFIER SEMI_COLON . body DOT
+
+    BEGIN_ST   shift, and go to state 6
+    FORWARD    shift, and go to state 7
+    FUNCTION   shift, and go to state 8
+    PROCEDURE  shift, and go to state 9
+    VAR        shift, and go to state 10
+    LABEL      shift, and go to state 11
+
+    body    go to state 12
+    local   go to state 13
+    header  go to state 14
+    block   go to state 15
+
+
+State 6
+
+   29 block: BEGIN_ST . stmt next_stmt END
+
+    DISPOSE         shift, and go to state 16
+    NEW             shift, and go to state 17
+    AT              shift, and go to state 18
+    BEGIN_ST        shift, and go to state 6
+    IF              shift, and go to state 19
+    WHILE           shift, and go to state 20
+    NOT             shift, and go to state 21
+    UPLUS           shift, and go to state 22
+    UMINUS          shift, and go to state 23
+    RESULT          shift, and go to state 24
+    RETURN          shift, and go to state 25
+    GOTO            shift, and go to state 26
+    IDENTIFIER      shift, and go to state 27
+    INT_CONST       shift, and go to state 28
+    REAL_CONST      shift, and go to state 29
+    CHAR_CONST      shift, and go to state 30
+    STRING_LITERAL  shift, and go to state 31
+    TRUE            shift, and go to state 32
+    FALSE           shift, and go to state 33
+    NIL             shift, and go to state 34
+    OP_PAR          shift, and go to state 35
+
+    $default  reduce using rule 32 (stmt)
+
+    block    go to state 36
+    stmt     go to state 37
+    expr     go to state 38
+    l_value  go to state 39
+    r_value  go to state 40
+    const    go to state 41
+    call     go to state 42
+    unop     go to state 43
+
+
+State 7
+
+    7 local: FORWARD . header SEMI_COLON
+
+    FUNCTION   shift, and go to state 8
+    PROCEDURE  shift, and go to state 9
+
+    header  go to state 44
+
+
+State 8
+
+   13 header: FUNCTION . IDENTIFIER OP_PAR optional_arguments CLOS_PAR COLON type
+
+    IDENTIFIER  shift, and go to state 45
+
+
+State 9
+
+   12 header: PROCEDURE . IDENTIFIER OP_PAR optional_arguments CLOS_PAR
+
+    IDENTIFIER  shift, and go to state 46
+
+
+State 10
+
+    4 local: VAR . IDENTIFIER next_id COLON type SEMI_COLON next_var
+
+    IDENTIFIER  shift, and go to state 47
+
+
+State 11
+
+    5 local: LABEL . IDENTIFIER next_id SEMI_COLON
+
+    IDENTIFIER  shift, and go to state 48
+
+
+State 12
+
+    1 program: PROGRAM IDENTIFIER SEMI_COLON body . DOT
+
+    DOT  shift, and go to state 49
+
+
+State 13
+
+    3 body: local . body
+
+    BEGIN_ST   shift, and go to state 6
+    FORWARD    shift, and go to state 7
+    FUNCTION   shift, and go to state 8
+    PROCEDURE  shift, and go to state 9
+    VAR        shift, and go to state 10
+    LABEL      shift, and go to state 11
+
+    body    go to state 50
+    local   go to state 13
+    header  go to state 14
+    block   go to state 15
+
+
+State 14
+
+    6 local: header . SEMI_COLON body SEMI_COLON
+
+    SEMI_COLON  shift, and go to state 51
+
+
+State 15
+
+    2 body: block .
+
+    $default  reduce using rule 2 (body)
+
+
+State 16
+
+   42 stmt: DISPOSE . optional_bracket l_value
+
+    OP_BRACK  shift, and go to state 52
+
+    $default  reduce using rule 48 (optional_bracket)
+
+    optional_bracket  go to state 53
+
+
+State 17
+
+   41 stmt: NEW . optional_expr l_value
+
+    OP_BRACK  shift, and go to state 54
+
+    $default  reduce using rule 46 (optional_expr)
+
+    optional_expr  go to state 55
+
+
+State 18
+
+   60 r_value: AT . l_value
+
+    AT              shift, and go to state 18
+    NOT             shift, and go to state 21
+    UPLUS           shift, and go to state 22
+    UMINUS          shift, and go to state 23
+    RESULT          shift, and go to state 24
+    IDENTIFIER      shift, and go to state 56
+    INT_CONST       shift, and go to state 28
+    REAL_CONST      shift, and go to state 29
+    CHAR_CONST      shift, and go to state 30
+    STRING_LITERAL  shift, and go to state 31
+    TRUE            shift, and go to state 32
+    FALSE           shift, and go to state 33
+    NIL             shift, and go to state 34
+    OP_PAR          shift, and go to state 35
+
+    expr     go to state 38
+    l_value  go to state 57
+    r_value  go to state 40
+    const    go to state 41
+    call     go to state 58
+    unop     go to state 43
+
+
+State 19
+
+   36 stmt: IF . expr THEN stmt optional_else
+
+    AT              shift, and go to state 18
+    NOT             shift, and go to state 21
+    UPLUS           shift, and go to state 22
+    UMINUS          shift, and go to state 23
+    RESULT          shift, and go to state 24
+    IDENTIFIER      shift, and go to state 56
+    INT_CONST       shift, and go to state 28
+    REAL_CONST      shift, and go to state 29
+    CHAR_CONST      shift, and go to state 30
+    STRING_LITERAL  shift, and go to state 31
+    TRUE            shift, and go to state 32
+    FALSE           shift, and go to state 33
+    NIL             shift, and go to state 34
+    OP_PAR          shift, and go to state 35
+
+    expr     go to state 59
+    l_value  go to state 60
+    r_value  go to state 40
+    const    go to state 41
+    call     go to state 58
+    unop     go to state 43
+
+
+State 20
+
+   37 stmt: WHILE . expr DO stmt
+
+    AT              shift, and go to state 18
+    NOT             shift, and go to state 21
+    UPLUS           shift, and go to state 22
+    UMINUS          shift, and go to state 23
+    RESULT          shift, and go to state 24
+    IDENTIFIER      shift, and go to state 56
+    INT_CONST       shift, and go to state 28
+    REAL_CONST      shift, and go to state 29
+    CHAR_CONST      shift, and go to state 30
+    STRING_LITERAL  shift, and go to state 31
+    TRUE            shift, and go to state 32
+    FALSE           shift, and go to state 33
+    NIL             shift, and go to state 34
+    OP_PAR          shift, and go to state 35
+
+    expr     go to state 61
+    l_value  go to state 60
+    r_value  go to state 40
+    const    go to state 41
+    call     go to state 58
+    unop     go to state 43
+
+
+State 21
+
+   74 unop: NOT .
+
+    $default  reduce using rule 74 (unop)
+
+
+State 22
+
+   75 unop: UPLUS .
+
+    $default  reduce using rule 75 (unop)
+
+
+State 23
+
+   76 unop: UMINUS .
+
+    $default  reduce using rule 76 (unop)
+
+
+State 24
+
+   52 l_value: RESULT .
+
+    $default  reduce using rule 52 (l_value)
+
+
+State 25
+
+   40 stmt: RETURN .
+
+    $default  reduce using rule 40 (stmt)
+
+
+State 26
+
+   39 stmt: GOTO . IDENTIFIER
+
+    IDENTIFIER  shift, and go to state 62
+
+
+State 27
+
+   38 stmt: IDENTIFIER . COLON stmt
+   51 l_value: IDENTIFIER .
+   69 call: IDENTIFIER . OP_PAR optional_parameters CLOS_PAR
+
+    COLON   shift, and go to state 63
+    OP_PAR  shift, and go to state 64
+
+    $default  reduce using rule 51 (l_value)
+
+
+State 28
+
+   63 const: INT_CONST .
+
+    $default  reduce using rule 63 (const)
+
+
+State 29
+
+   66 const: REAL_CONST .
+
+    $default  reduce using rule 66 (const)
+
+
+State 30
+
+   67 const: CHAR_CONST .
+
+    $default  reduce using rule 67 (const)
+
+
+State 31
+
+   53 l_value: STRING_LITERAL .
+
+    $default  reduce using rule 53 (l_value)
+
+
+State 32
+
+   64 const: TRUE .
+
+    $default  reduce using rule 64 (const)
+
+
+State 33
+
+   65 const: FALSE .
+
+    $default  reduce using rule 65 (const)
+
+
+State 34
+
+   68 const: NIL .
+
+    $default  reduce using rule 68 (const)
+
+
+State 35
+
+   56 l_value: OP_PAR . l_value CLOS_PAR
+   58 r_value: OP_PAR . r_value CLOS_PAR
+
+    AT              shift, and go to state 18
+    NOT             shift, and go to state 21
+    UPLUS           shift, and go to state 22
+    UMINUS          shift, and go to state 23
+    RESULT          shift, and go to state 24
+    IDENTIFIER      shift, and go to state 56
+    INT_CONST       shift, and go to state 28
+    REAL_CONST      shift, and go to state 29
+    CHAR_CONST      shift, and go to state 30
+    STRING_LITERAL  shift, and go to state 31
+    TRUE            shift, and go to state 32
+    FALSE           shift, and go to state 33
+    NIL             shift, and go to state 34
+    OP_PAR          shift, and go to state 35
+
+    expr     go to state 38
+    l_value  go to state 65
+    r_value  go to state 66
+    const    go to state 41
+    call     go to state 58
+    unop     go to state 43
+
+
+State 36
+
+   34 stmt: block .
+
+    $default  reduce using rule 34 (stmt)
+
+
+State 37
+
+   29 block: BEGIN_ST stmt . next_stmt END
+
+    SEMI_COLON  shift, and go to state 67
+
+    $default  reduce using rule 31 (next_stmt)
+
+    next_stmt  go to state 68
+
+
+State 38
+
+   55 l_value: expr . CARET
+   62 r_value: expr . binop expr
+
+    CARET      shift, and go to state 69
+    AND        shift, and go to state 70
+    OR         shift, and go to state 71
+    PLUS       shift, and go to state 72
+    MINUS      shift, and go to state 73
+    MUL        shift, and go to state 74
+    DIV        shift, and go to state 75
+    INT_DIV    shift, and go to state 76
+    MOD        shift, and go to state 77
+    EQUAL      shift, and go to state 78
+    NOT_EQUAL  shift, and go to state 79
+    GT         shift, and go to state 80
+    LT         shift, and go to state 81
+    GE         shift, and go to state 82
+    LE         shift, and go to state 83
+
+    binop  go to state 84
+
+
+State 39
+
+   33 stmt: l_value . ASSIGN expr
+   49 expr: l_value .
+   54 l_value: l_value . OP_BRACK expr CLOS_BRACK
+
+    ASSIGN    shift, and go to state 85
+    OP_BRACK  shift, and go to state 86
+
+    $default  reduce using rule 49 (expr)
+
+
+State 40
+
+   50 expr: r_value .
+
+    $default  reduce using rule 50 (expr)
+
+
+State 41
+
+   57 r_value: const .
+
+    $default  reduce using rule 57 (r_value)
+
+
+State 42
+
+   35 stmt: call .
+   59 r_value: call .
+
+    END         reduce using rule 35 (stmt)
+    ELSE        reduce using rule 35 (stmt)
+    SEMI_COLON  reduce using rule 35 (stmt)
+    $default    reduce using rule 59 (r_value)
+
+
+State 43
+
+   61 r_value: unop . expr
+
+    AT              shift, and go to state 18
+    NOT             shift, and go to state 21
+    UPLUS           shift, and go to state 22
+    UMINUS          shift, and go to state 23
+    RESULT          shift, and go to state 24
+    IDENTIFIER      shift, and go to state 56
+    INT_CONST       shift, and go to state 28
+    REAL_CONST      shift, and go to state 29
+    CHAR_CONST      shift, and go to state 30
+    STRING_LITERAL  shift, and go to state 31
+    TRUE            shift, and go to state 32
+    FALSE           shift, and go to state 33
+    NIL             shift, and go to state 34
+    OP_PAR          shift, and go to state 35
+
+    expr     go to state 87
+    l_value  go to state 60
+    r_value  go to state 40
+    const    go to state 41
+    call     go to state 58
+    unop     go to state 43
+
+
+State 44
+
+    7 local: FORWARD header . SEMI_COLON
+
+    SEMI_COLON  shift, and go to state 88
+
+
+State 45
+
+   13 header: FUNCTION IDENTIFIER . OP_PAR optional_arguments CLOS_PAR COLON type
+
+    OP_PAR  shift, and go to state 89
+
+
+State 46
+
+   12 header: PROCEDURE IDENTIFIER . OP_PAR optional_arguments CLOS_PAR
+
+    OP_PAR  shift, and go to state 90
+
+
+State 47
+
+    4 local: VAR IDENTIFIER . next_id COLON type SEMI_COLON next_var
+
+    COMMA  shift, and go to state 91
+
+    $default  reduce using rule 11 (next_id)
+
+    next_id  go to state 92
+
+
+State 48
+
+    5 local: LABEL IDENTIFIER . next_id SEMI_COLON
+
+    COMMA  shift, and go to state 91
+
+    $default  reduce using rule 11 (next_id)
+
+    next_id  go to state 93
+
+
+State 49
+
+    1 program: PROGRAM IDENTIFIER SEMI_COLON body DOT .
+
+    $default  reduce using rule 1 (program)
+
+
+State 50
+
+    3 body: local body .
+
+    $default  reduce using rule 3 (body)
+
+
+State 51
+
+    6 local: header SEMI_COLON . body SEMI_COLON
+
+    BEGIN_ST   shift, and go to state 6
+    FORWARD    shift, and go to state 7
+    FUNCTION   shift, and go to state 8
+    PROCEDURE  shift, and go to state 9
+    VAR        shift, and go to state 10
+    LABEL      shift, and go to state 11
+
+    body    go to state 94
+    local   go to state 13
+    header  go to state 14
+    block   go to state 15
+
+
+State 52
+
+   47 optional_bracket: OP_BRACK . CLOS_BRACK
+
+    CLOS_BRACK  shift, and go to state 95
+
+
+State 53
+
+   42 stmt: DISPOSE optional_bracket . l_value
+
+    AT              shift, and go to state 18
+    NOT             shift, and go to state 21
+    UPLUS           shift, and go to state 22
+    UMINUS          shift, and go to state 23
+    RESULT          shift, and go to state 24
+    IDENTIFIER      shift, and go to state 56
+    INT_CONST       shift, and go to state 28
+    REAL_CONST      shift, and go to state 29
+    CHAR_CONST      shift, and go to state 30
+    STRING_LITERAL  shift, and go to state 31
+    TRUE            shift, and go to state 32
+    FALSE           shift, and go to state 33
+    NIL             shift, and go to state 34
+    OP_PAR          shift, and go to state 35
+
+    expr     go to state 38
+    l_value  go to state 96
+    r_value  go to state 40
+    const    go to state 41
+    call     go to state 58
+    unop     go to state 43
+
+
+State 54
+
+   45 optional_expr: OP_BRACK . expr CLOS_BRACK
+
+    AT              shift, and go to state 18
+    NOT             shift, and go to state 21
+    UPLUS           shift, and go to state 22
+    UMINUS          shift, and go to state 23
+    RESULT          shift, and go to state 24
+    IDENTIFIER      shift, and go to state 56
+    INT_CONST       shift, and go to state 28
+    REAL_CONST      shift, and go to state 29
+    CHAR_CONST      shift, and go to state 30
+    STRING_LITERAL  shift, and go to state 31
+    TRUE            shift, and go to state 32
+    FALSE           shift, and go to state 33
+    NIL             shift, and go to state 34
+    OP_PAR          shift, and go to state 35
+
+    expr     go to state 97
+    l_value  go to state 60
+    r_value  go to state 40
+    const    go to state 41
+    call     go to state 58
+    unop     go to state 43
+
+
+State 55
+
+   41 stmt: NEW optional_expr . l_value
+
+    AT              shift, and go to state 18
+    NOT             shift, and go to state 21
+    UPLUS           shift, and go to state 22
+    UMINUS          shift, and go to state 23
+    RESULT          shift, and go to state 24
+    IDENTIFIER      shift, and go to state 56
+    INT_CONST       shift, and go to state 28
+    REAL_CONST      shift, and go to state 29
+    CHAR_CONST      shift, and go to state 30
+    STRING_LITERAL  shift, and go to state 31
+    TRUE            shift, and go to state 32
+    FALSE           shift, and go to state 33
+    NIL             shift, and go to state 34
+    OP_PAR          shift, and go to state 35
+
+    expr     go to state 38
+    l_value  go to state 98
+    r_value  go to state 40
+    const    go to state 41
+    call     go to state 58
+    unop     go to state 43
+
+
+State 56
+
+   51 l_value: IDENTIFIER .
+   69 call: IDENTIFIER . OP_PAR optional_parameters CLOS_PAR
+
+    OP_PAR  shift, and go to state 64
+
+    $default  reduce using rule 51 (l_value)
+
+
+State 57
+
+   49 expr: l_value .
+   54 l_value: l_value . OP_BRACK expr CLOS_BRACK
+   60 r_value: AT l_value .
+
+    OP_BRACK  shift, and go to state 86
+
+    CARET       reduce using rule 49 (expr)
+    CARET       [reduce using rule 60 (r_value)]
+    DO          reduce using rule 60 (r_value)
+    END         reduce using rule 60 (r_value)
+    THEN        reduce using rule 60 (r_value)
+    ELSE        reduce using rule 60 (r_value)
+    AND         reduce using rule 49 (expr)
+    AND         [reduce using rule 60 (r_value)]
+    OR          reduce using rule 49 (expr)
+    OR          [reduce using rule 60 (r_value)]
+    SEMI_COLON  reduce using rule 60 (r_value)
+    COMMA       reduce using rule 60 (r_value)
+    PLUS        reduce using rule 49 (expr)
+    PLUS        [reduce using rule 60 (r_value)]
+    MINUS       reduce using rule 49 (expr)
+    MINUS       [reduce using rule 60 (r_value)]
+    MUL         reduce using rule 49 (expr)
+    MUL         [reduce using rule 60 (r_value)]
+    DIV         reduce using rule 49 (expr)
+    DIV         [reduce using rule 60 (r_value)]
+    INT_DIV     reduce using rule 49 (expr)
+    INT_DIV     [reduce using rule 60 (r_value)]
+    MOD         reduce using rule 49 (expr)
+    MOD         [reduce using rule 60 (r_value)]
+    EQUAL       reduce using rule 49 (expr)
+    EQUAL       [reduce using rule 60 (r_value)]
+    NOT_EQUAL   reduce using rule 49 (expr)
+    NOT_EQUAL   [reduce using rule 60 (r_value)]
+    GT          reduce using rule 49 (expr)
+    GT          [reduce using rule 60 (r_value)]
+    LT          reduce using rule 49 (expr)
+    LT          [reduce using rule 60 (r_value)]
+    GE          reduce using rule 49 (expr)
+    GE          [reduce using rule 60 (r_value)]
+    LE          reduce using rule 49 (expr)
+    LE          [reduce using rule 60 (r_value)]
+    CLOS_PAR    reduce using rule 60 (r_value)
+    CLOS_BRACK  reduce using rule 60 (r_value)
+    $default    reduce using rule 49 (expr)
+
+
+State 58
+
+   59 r_value: call .
+
+    $default  reduce using rule 59 (r_value)
+
+
+State 59
+
+   36 stmt: IF expr . THEN stmt optional_else
+   55 l_value: expr . CARET
+   62 r_value: expr . binop expr
+
+    CARET      shift, and go to state 69
+    THEN       shift, and go to state 99
+    AND        shift, and go to state 70
+    OR         shift, and go to state 71
+    PLUS       shift, and go to state 72
+    MINUS      shift, and go to state 73
+    MUL        shift, and go to state 74
+    DIV        shift, and go to state 75
+    INT_DIV    shift, and go to state 76
+    MOD        shift, and go to state 77
+    EQUAL      shift, and go to state 78
+    NOT_EQUAL  shift, and go to state 79
+    GT         shift, and go to state 80
+    LT         shift, and go to state 81
+    GE         shift, and go to state 82
+    LE         shift, and go to state 83
+
+    binop  go to state 84
+
+
+State 60
+
+   49 expr: l_value .
+   54 l_value: l_value . OP_BRACK expr CLOS_BRACK
+
+    OP_BRACK  shift, and go to state 86
+
+    $default  reduce using rule 49 (expr)
+
+
+State 61
+
+   37 stmt: WHILE expr . DO stmt
+   55 l_value: expr . CARET
+   62 r_value: expr . binop expr
+
+    CARET      shift, and go to state 69
+    DO         shift, and go to state 100
+    AND        shift, and go to state 70
+    OR         shift, and go to state 71
+    PLUS       shift, and go to state 72
+    MINUS      shift, and go to state 73
+    MUL        shift, and go to state 74
+    DIV        shift, and go to state 75
+    INT_DIV    shift, and go to state 76
+    MOD        shift, and go to state 77
+    EQUAL      shift, and go to state 78
+    NOT_EQUAL  shift, and go to state 79
+    GT         shift, and go to state 80
+    LT         shift, and go to state 81
+    GE         shift, and go to state 82
+    LE         shift, and go to state 83
+
+    binop  go to state 84
+
+
+State 62
+
+   39 stmt: GOTO IDENTIFIER .
+
+    $default  reduce using rule 39 (stmt)
+
+
+State 63
+
+   38 stmt: IDENTIFIER COLON . stmt
+
+    DISPOSE         shift, and go to state 16
+    NEW             shift, and go to state 17
+    AT              shift, and go to state 18
+    BEGIN_ST        shift, and go to state 6
+    IF              shift, and go to state 19
+    WHILE           shift, and go to state 20
+    NOT             shift, and go to state 21
+    UPLUS           shift, and go to state 22
+    UMINUS          shift, and go to state 23
+    RESULT          shift, and go to state 24
+    RETURN          shift, and go to state 25
+    GOTO            shift, and go to state 26
+    IDENTIFIER      shift, and go to state 27
+    INT_CONST       shift, and go to state 28
+    REAL_CONST      shift, and go to state 29
+    CHAR_CONST      shift, and go to state 30
+    STRING_LITERAL  shift, and go to state 31
+    TRUE            shift, and go to state 32
+    FALSE           shift, and go to state 33
+    NIL             shift, and go to state 34
+    OP_PAR          shift, and go to state 35
+
+    $default  reduce using rule 32 (stmt)
+
+    block    go to state 36
+    stmt     go to state 101
+    expr     go to state 38
+    l_value  go to state 39
+    r_value  go to state 40
+    const    go to state 41
+    call     go to state 42
+    unop     go to state 43
+
+
+State 64
+
+   69 call: IDENTIFIER OP_PAR . optional_parameters CLOS_PAR
+
+    IDENTIFIER  shift, and go to state 102
+
+    $default  reduce using rule 71 (optional_parameters)
+
+    optional_parameters  go to state 103
+
+
+State 65
+
+   49 expr: l_value .
+   54 l_value: l_value . OP_BRACK expr CLOS_BRACK
+   56        | OP_PAR l_value . CLOS_PAR
+
+    CLOS_PAR  shift, and go to state 104
+    OP_BRACK  shift, and go to state 86
+
+    $default  reduce using rule 49 (expr)
+
+
+State 66
+
+   50 expr: r_value .
+   58 r_value: OP_PAR r_value . CLOS_PAR
+
+    CLOS_PAR  shift, and go to state 105
+
+    $default  reduce using rule 50 (expr)
+
+
+State 67
+
+   30 next_stmt: SEMI_COLON . stmt next_stmt
+
+    DISPOSE         shift, and go to state 16
+    NEW             shift, and go to state 17
+    AT              shift, and go to state 18
+    BEGIN_ST        shift, and go to state 6
+    IF              shift, and go to state 19
+    WHILE           shift, and go to state 20
+    NOT             shift, and go to state 21
+    UPLUS           shift, and go to state 22
+    UMINUS          shift, and go to state 23
+    RESULT          shift, and go to state 24
+    RETURN          shift, and go to state 25
+    GOTO            shift, and go to state 26
+    IDENTIFIER      shift, and go to state 27
+    INT_CONST       shift, and go to state 28
+    REAL_CONST      shift, and go to state 29
+    CHAR_CONST      shift, and go to state 30
+    STRING_LITERAL  shift, and go to state 31
+    TRUE            shift, and go to state 32
+    FALSE           shift, and go to state 33
+    NIL             shift, and go to state 34
+    OP_PAR          shift, and go to state 35
+
+    $default  reduce using rule 32 (stmt)
+
+    block    go to state 36
+    stmt     go to state 106
+    expr     go to state 38
+    l_value  go to state 39
+    r_value  go to state 40
+    const    go to state 41
+    call     go to state 42
+    unop     go to state 43
+
+
+State 68
+
+   29 block: BEGIN_ST stmt next_stmt . END
+
+    END  shift, and go to state 107
+
+
+State 69
+
+   55 l_value: expr CARET .
+
+    $default  reduce using rule 55 (l_value)
+
+
+State 70
+
+   84 binop: AND .
+
+    $default  reduce using rule 84 (binop)
+
+
+State 71
+
+   83 binop: OR .
+
+    $default  reduce using rule 83 (binop)
+
+
+State 72
+
+   77 binop: PLUS .
+
+    $default  reduce using rule 77 (binop)
+
+
+State 73
+
+   78 binop: MINUS .
+
+    $default  reduce using rule 78 (binop)
+
+
+State 74
+
+   79 binop: MUL .
+
+    $default  reduce using rule 79 (binop)
+
+
+State 75
+
+   80 binop: DIV .
+
+    $default  reduce using rule 80 (binop)
+
+
+State 76
+
+   81 binop: INT_DIV .
+
+    $default  reduce using rule 81 (binop)
+
+
+State 77
+
+   82 binop: MOD .
+
+    $default  reduce using rule 82 (binop)
+
+
+State 78
+
+   85 binop: EQUAL .
+
+    $default  reduce using rule 85 (binop)
+
+
+State 79
+
+   86 binop: NOT_EQUAL .
+
+    $default  reduce using rule 86 (binop)
+
+
+State 80
+
+   89 binop: GT .
+
+    $default  reduce using rule 89 (binop)
+
+
+State 81
+
+   87 binop: LT .
+
+    $default  reduce using rule 87 (binop)
+
+
+State 82
+
+   90 binop: GE .
+
+    $default  reduce using rule 90 (binop)
+
+
+State 83
+
+   88 binop: LE .
+
+    $default  reduce using rule 88 (binop)
+
+
+State 84
+
+   62 r_value: expr binop . expr
+
+    AT              shift, and go to state 18
+    NOT             shift, and go to state 21
+    UPLUS           shift, and go to state 22
+    UMINUS          shift, and go to state 23
+    RESULT          shift, and go to state 24
+    IDENTIFIER      shift, and go to state 56
+    INT_CONST       shift, and go to state 28
+    REAL_CONST      shift, and go to state 29
+    CHAR_CONST      shift, and go to state 30
+    STRING_LITERAL  shift, and go to state 31
+    TRUE            shift, and go to state 32
+    FALSE           shift, and go to state 33
+    NIL             shift, and go to state 34
+    OP_PAR          shift, and go to state 35
+
+    expr     go to state 108
+    l_value  go to state 60
+    r_value  go to state 40
+    const    go to state 41
+    call     go to state 58
+    unop     go to state 43
+
+
+State 85
+
+   33 stmt: l_value ASSIGN . expr
+
+    AT              shift, and go to state 18
+    NOT             shift, and go to state 21
+    UPLUS           shift, and go to state 22
+    UMINUS          shift, and go to state 23
+    RESULT          shift, and go to state 24
+    IDENTIFIER      shift, and go to state 56
+    INT_CONST       shift, and go to state 28
+    REAL_CONST      shift, and go to state 29
+    CHAR_CONST      shift, and go to state 30
+    STRING_LITERAL  shift, and go to state 31
+    TRUE            shift, and go to state 32
+    FALSE           shift, and go to state 33
+    NIL             shift, and go to state 34
+    OP_PAR          shift, and go to state 35
+
+    expr     go to state 109
+    l_value  go to state 60
+    r_value  go to state 40
+    const    go to state 41
+    call     go to state 58
+    unop     go to state 43
+
+
+State 86
+
+   54 l_value: l_value OP_BRACK . expr CLOS_BRACK
+
+    AT              shift, and go to state 18
+    NOT             shift, and go to state 21
+    UPLUS           shift, and go to state 22
+    UMINUS          shift, and go to state 23
+    RESULT          shift, and go to state 24
+    IDENTIFIER      shift, and go to state 56
+    INT_CONST       shift, and go to state 28
+    REAL_CONST      shift, and go to state 29
+    CHAR_CONST      shift, and go to state 30
+    STRING_LITERAL  shift, and go to state 31
+    TRUE            shift, and go to state 32
+    FALSE           shift, and go to state 33
+    NIL             shift, and go to state 34
+    OP_PAR          shift, and go to state 35
+
+    expr     go to state 110
+    l_value  go to state 60
+    r_value  go to state 40
+    const    go to state 41
+    call     go to state 58
+    unop     go to state 43
+
+
+State 87
+
+   55 l_value: expr . CARET
+   61 r_value: unop expr .
+   62        | expr . binop expr
+
+    CARET      shift, and go to state 69
+    AND        shift, and go to state 70
+    OR         shift, and go to state 71
+    PLUS       shift, and go to state 72
+    MINUS      shift, and go to state 73
+    MUL        shift, and go to state 74
+    DIV        shift, and go to state 75
+    INT_DIV    shift, and go to state 76
+    MOD        shift, and go to state 77
+    EQUAL      shift, and go to state 78
+    NOT_EQUAL  shift, and go to state 79
+    GT         shift, and go to state 80
+    LT         shift, and go to state 81
+    GE         shift, and go to state 82
+    LE         shift, and go to state 83
+
+    CARET      [reduce using rule 61 (r_value)]
+    AND        [reduce using rule 61 (r_value)]
+    OR         [reduce using rule 61 (r_value)]
+    PLUS       [reduce using rule 61 (r_value)]
+    MINUS      [reduce using rule 61 (r_value)]
+    MUL        [reduce using rule 61 (r_value)]
+    DIV        [reduce using rule 61 (r_value)]
+    INT_DIV    [reduce using rule 61 (r_value)]
+    MOD        [reduce using rule 61 (r_value)]
+    EQUAL      [reduce using rule 61 (r_value)]
+    NOT_EQUAL  [reduce using rule 61 (r_value)]
+    GT         [reduce using rule 61 (r_value)]
+    LT         [reduce using rule 61 (r_value)]
+    GE         [reduce using rule 61 (r_value)]
+    LE         [reduce using rule 61 (r_value)]
+    $default   reduce using rule 61 (r_value)
+
+    binop  go to state 84
+
+
+State 88
+
+    7 local: FORWARD header SEMI_COLON .
+
+    $default  reduce using rule 7 (local)
+
+
+State 89
+
+   13 header: FUNCTION IDENTIFIER OP_PAR . optional_arguments CLOS_PAR COLON type
+
+    VAR  shift, and go to state 111
+
+    IDENTIFIER  reduce using rule 20 (optional_var)
+    $default    reduce using rule 15 (optional_arguments)
+
+    optional_arguments  go to state 112
+    formal              go to state 113
+    optional_var        go to state 114
+
+
+State 90
+
+   12 header: PROCEDURE IDENTIFIER OP_PAR . optional_arguments CLOS_PAR
+
+    VAR  shift, and go to state 111
+
+    IDENTIFIER  reduce using rule 20 (optional_var)
+    $default    reduce using rule 15 (optional_arguments)
+
+    optional_arguments  go to state 115
+    formal              go to state 113
+    optional_var        go to state 114
+
+
+State 91
+
+   10 next_id: COMMA . IDENTIFIER next_id
+
+    IDENTIFIER  shift, and go to state 116
+
+
+State 92
+
+    4 local: VAR IDENTIFIER next_id . COLON type SEMI_COLON next_var
+
+    COLON  shift, and go to state 117
+
+
+State 93
+
+    5 local: LABEL IDENTIFIER next_id . SEMI_COLON
+
+    SEMI_COLON  shift, and go to state 118
+
+
+State 94
+
+    6 local: header SEMI_COLON body . SEMI_COLON
+
+    SEMI_COLON  shift, and go to state 119
+
+
+State 95
+
+   47 optional_bracket: OP_BRACK CLOS_BRACK .
+
+    $default  reduce using rule 47 (optional_bracket)
+
+
+State 96
+
+   42 stmt: DISPOSE optional_bracket l_value .
+   49 expr: l_value .
+   54 l_value: l_value . OP_BRACK expr CLOS_BRACK
+
+    OP_BRACK  shift, and go to state 86
+
+    END         reduce using rule 42 (stmt)
+    ELSE        reduce using rule 42 (stmt)
+    SEMI_COLON  reduce using rule 42 (stmt)
+    $default    reduce using rule 49 (expr)
+
+
+State 97
+
+   45 optional_expr: OP_BRACK expr . CLOS_BRACK
+   55 l_value: expr . CARET
+   62 r_value: expr . binop expr
+
+    CARET       shift, and go to state 69
+    AND         shift, and go to state 70
+    OR          shift, and go to state 71
+    PLUS        shift, and go to state 72
+    MINUS       shift, and go to state 73
+    MUL         shift, and go to state 74
+    DIV         shift, and go to state 75
+    INT_DIV     shift, and go to state 76
+    MOD         shift, and go to state 77
+    EQUAL       shift, and go to state 78
+    NOT_EQUAL   shift, and go to state 79
+    GT          shift, and go to state 80
+    LT          shift, and go to state 81
+    GE          shift, and go to state 82
+    LE          shift, and go to state 83
+    CLOS_BRACK  shift, and go to state 120
+
+    binop  go to state 84
+
+
+State 98
+
+   41 stmt: NEW optional_expr l_value .
+   49 expr: l_value .
+   54 l_value: l_value . OP_BRACK expr CLOS_BRACK
+
+    OP_BRACK  shift, and go to state 86
+
+    END         reduce using rule 41 (stmt)
+    ELSE        reduce using rule 41 (stmt)
+    SEMI_COLON  reduce using rule 41 (stmt)
+    $default    reduce using rule 49 (expr)
+
+
+State 99
+
+   36 stmt: IF expr THEN . stmt optional_else
+
+    DISPOSE         shift, and go to state 16
+    NEW             shift, and go to state 17
+    AT              shift, and go to state 18
+    BEGIN_ST        shift, and go to state 6
+    IF              shift, and go to state 19
+    WHILE           shift, and go to state 20
+    NOT             shift, and go to state 21
+    UPLUS           shift, and go to state 22
+    UMINUS          shift, and go to state 23
+    RESULT          shift, and go to state 24
+    RETURN          shift, and go to state 25
+    GOTO            shift, and go to state 26
+    IDENTIFIER      shift, and go to state 27
+    INT_CONST       shift, and go to state 28
+    REAL_CONST      shift, and go to state 29
+    CHAR_CONST      shift, and go to state 30
+    STRING_LITERAL  shift, and go to state 31
+    TRUE            shift, and go to state 32
+    FALSE           shift, and go to state 33
+    NIL             shift, and go to state 34
+    OP_PAR          shift, and go to state 35
+
+    $default  reduce using rule 32 (stmt)
+
+    block    go to state 36
+    stmt     go to state 121
+    expr     go to state 38
+    l_value  go to state 39
+    r_value  go to state 40
+    const    go to state 41
+    call     go to state 42
+    unop     go to state 43
+
+
+State 100
+
+   37 stmt: WHILE expr DO . stmt
+
+    DISPOSE         shift, and go to state 16
+    NEW             shift, and go to state 17
+    AT              shift, and go to state 18
+    BEGIN_ST        shift, and go to state 6
+    IF              shift, and go to state 19
+    WHILE           shift, and go to state 20
+    NOT             shift, and go to state 21
+    UPLUS           shift, and go to state 22
+    UMINUS          shift, and go to state 23
+    RESULT          shift, and go to state 24
+    RETURN          shift, and go to state 25
+    GOTO            shift, and go to state 26
+    IDENTIFIER      shift, and go to state 27
+    INT_CONST       shift, and go to state 28
+    REAL_CONST      shift, and go to state 29
+    CHAR_CONST      shift, and go to state 30
+    STRING_LITERAL  shift, and go to state 31
+    TRUE            shift, and go to state 32
+    FALSE           shift, and go to state 33
+    NIL             shift, and go to state 34
+    OP_PAR          shift, and go to state 35
+
+    $default  reduce using rule 32 (stmt)
+
+    block    go to state 36
+    stmt     go to state 122
+    expr     go to state 38
+    l_value  go to state 39
+    r_value  go to state 40
+    const    go to state 41
+    call     go to state 42
+    unop     go to state 43
+
+
+State 101
+
+   38 stmt: IDENTIFIER COLON stmt .
+
+    $default  reduce using rule 38 (stmt)
+
+
+State 102
+
+   70 optional_parameters: IDENTIFIER . OP_PAR expr next_expr CLOS_PAR
+
+    OP_PAR  shift, and go to state 123
+
+
+State 103
+
+   69 call: IDENTIFIER OP_PAR optional_parameters . CLOS_PAR
+
+    CLOS_PAR  shift, and go to state 124
+
+
+State 104
+
+   56 l_value: OP_PAR l_value CLOS_PAR .
+
+    $default  reduce using rule 56 (l_value)
+
+
+State 105
+
+   58 r_value: OP_PAR r_value CLOS_PAR .
+
+    $default  reduce using rule 58 (r_value)
+
+
+State 106
+
+   30 next_stmt: SEMI_COLON stmt . next_stmt
+
+    SEMI_COLON  shift, and go to state 67
+
+    $default  reduce using rule 31 (next_stmt)
+
+    next_stmt  go to state 125
+
+
+State 107
+
+   29 block: BEGIN_ST stmt next_stmt END .
+
+    $default  reduce using rule 29 (block)
+
+
+State 108
+
+   55 l_value: expr . CARET
+   62 r_value: expr . binop expr
+   62        | expr binop expr .
+
+    CARET      shift, and go to state 69
+    AND        shift, and go to state 70
+    OR         shift, and go to state 71
+    PLUS       shift, and go to state 72
+    MINUS      shift, and go to state 73
+    MUL        shift, and go to state 74
+    DIV        shift, and go to state 75
+    INT_DIV    shift, and go to state 76
+    MOD        shift, and go to state 77
+    EQUAL      shift, and go to state 78
+    NOT_EQUAL  shift, and go to state 79
+    GT         shift, and go to state 80
+    LT         shift, and go to state 81
+    GE         shift, and go to state 82
+    LE         shift, and go to state 83
+
+    CARET      [reduce using rule 62 (r_value)]
+    AND        [reduce using rule 62 (r_value)]
+    OR         [reduce using rule 62 (r_value)]
+    PLUS       [reduce using rule 62 (r_value)]
+    MINUS      [reduce using rule 62 (r_value)]
+    MUL        [reduce using rule 62 (r_value)]
+    DIV        [reduce using rule 62 (r_value)]
+    INT_DIV    [reduce using rule 62 (r_value)]
+    MOD        [reduce using rule 62 (r_value)]
+    EQUAL      [reduce using rule 62 (r_value)]
+    NOT_EQUAL  [reduce using rule 62 (r_value)]
+    GT         [reduce using rule 62 (r_value)]
+    LT         [reduce using rule 62 (r_value)]
+    GE         [reduce using rule 62 (r_value)]
+    LE         [reduce using rule 62 (r_value)]
+    $default   reduce using rule 62 (r_value)
+
+    binop  go to state 84
+
+
+State 109
+
+   33 stmt: l_value ASSIGN expr .
+   55 l_value: expr . CARET
+   62 r_value: expr . binop expr
+
+    CARET      shift, and go to state 69
+    AND        shift, and go to state 70
+    OR         shift, and go to state 71
+    PLUS       shift, and go to state 72
+    MINUS      shift, and go to state 73
+    MUL        shift, and go to state 74
+    DIV        shift, and go to state 75
+    INT_DIV    shift, and go to state 76
+    MOD        shift, and go to state 77
+    EQUAL      shift, and go to state 78
+    NOT_EQUAL  shift, and go to state 79
+    GT         shift, and go to state 80
+    LT         shift, and go to state 81
+    GE         shift, and go to state 82
+    LE         shift, and go to state 83
+
+    $default  reduce using rule 33 (stmt)
+
+    binop  go to state 84
+
+
+State 110
+
+   54 l_value: l_value OP_BRACK expr . CLOS_BRACK
+   55        | expr . CARET
+   62 r_value: expr . binop expr
+
+    CARET       shift, and go to state 69
+    AND         shift, and go to state 70
+    OR          shift, and go to state 71
+    PLUS        shift, and go to state 72
+    MINUS       shift, and go to state 73
+    MUL         shift, and go to state 74
+    DIV         shift, and go to state 75
+    INT_DIV     shift, and go to state 76
+    MOD         shift, and go to state 77
+    EQUAL       shift, and go to state 78
+    NOT_EQUAL   shift, and go to state 79
+    GT          shift, and go to state 80
+    LT          shift, and go to state 81
+    GE          shift, and go to state 82
+    LE          shift, and go to state 83
+    CLOS_BRACK  shift, and go to state 126
+
+    binop  go to state 84
+
+
+State 111
+
+   19 optional_var: VAR .
+
+    $default  reduce using rule 19 (optional_var)
+
+
+State 112
+
+   13 header: FUNCTION IDENTIFIER OP_PAR optional_arguments . CLOS_PAR COLON type
+
+    CLOS_PAR  shift, and go to state 127
+
+
+State 113
+
+   14 optional_arguments: formal . next_arg
+
+    SEMI_COLON  shift, and go to state 128
+
+    $default  reduce using rule 17 (next_arg)
+
+    next_arg  go to state 129
+
+
+State 114
+
+   18 formal: optional_var . IDENTIFIER next_id COLON type
+
+    IDENTIFIER  shift, and go to state 130
+
+
+State 115
+
+   12 header: PROCEDURE IDENTIFIER OP_PAR optional_arguments . CLOS_PAR
+
+    CLOS_PAR  shift, and go to state 131
+
+
+State 116
+
+   10 next_id: COMMA IDENTIFIER . next_id
+
+    COMMA  shift, and go to state 91
+
+    $default  reduce using rule 11 (next_id)
+
+    next_id  go to state 132
+
+
+State 117
+
+    4 local: VAR IDENTIFIER next_id COLON . type SEMI_COLON next_var
+
+    ARRAY    shift, and go to state 133
+    CARET    shift, and go to state 134
+    BOOLEAN  shift, and go to state 135
+    CHAR     shift, and go to state 136
+    INTEGER  shift, and go to state 137
+    REAL     shift, and go to state 138
+
+    type  go to state 139
+
+
+State 118
+
+    5 local: LABEL IDENTIFIER next_id SEMI_COLON .
+
+    $default  reduce using rule 5 (local)
+
+
+State 119
+
+    6 local: header SEMI_COLON body SEMI_COLON .
+
+    $default  reduce using rule 6 (local)
+
+
+State 120
+
+   45 optional_expr: OP_BRACK expr CLOS_BRACK .
+
+    $default  reduce using rule 45 (optional_expr)
+
+
+State 121
+
+   36 stmt: IF expr THEN stmt . optional_else
+
+    ELSE  shift, and go to state 140
+
+    ELSE      [reduce using rule 44 (optional_else)]
+    $default  reduce using rule 44 (optional_else)
+
+    optional_else  go to state 141
+
+
+State 122
+
+   37 stmt: WHILE expr DO stmt .
+
+    $default  reduce using rule 37 (stmt)
+
+
+State 123
+
+   70 optional_parameters: IDENTIFIER OP_PAR . expr next_expr CLOS_PAR
+
+    AT              shift, and go to state 18
+    NOT             shift, and go to state 21
+    UPLUS           shift, and go to state 22
+    UMINUS          shift, and go to state 23
+    RESULT          shift, and go to state 24
+    IDENTIFIER      shift, and go to state 56
+    INT_CONST       shift, and go to state 28
+    REAL_CONST      shift, and go to state 29
+    CHAR_CONST      shift, and go to state 30
+    STRING_LITERAL  shift, and go to state 31
+    TRUE            shift, and go to state 32
+    FALSE           shift, and go to state 33
+    NIL             shift, and go to state 34
+    OP_PAR          shift, and go to state 35
+
+    expr     go to state 142
+    l_value  go to state 60
+    r_value  go to state 40
+    const    go to state 41
+    call     go to state 58
+    unop     go to state 43
+
+
+State 124
+
+   69 call: IDENTIFIER OP_PAR optional_parameters CLOS_PAR .
+
+    $default  reduce using rule 69 (call)
+
+
+State 125
+
+   30 next_stmt: SEMI_COLON stmt next_stmt .
+
+    $default  reduce using rule 30 (next_stmt)
+
+
+State 126
+
+   54 l_value: l_value OP_BRACK expr CLOS_BRACK .
+
+    $default  reduce using rule 54 (l_value)
+
+
+State 127
+
+   13 header: FUNCTION IDENTIFIER OP_PAR optional_arguments CLOS_PAR . COLON type
+
+    COLON  shift, and go to state 143
+
+
+State 128
+
+   16 next_arg: SEMI_COLON . formal next_arg
+
+    VAR  shift, and go to state 111
+
+    $default  reduce using rule 20 (optional_var)
+
+    formal        go to state 144
+    optional_var  go to state 114
+
+
+State 129
+
+   14 optional_arguments: formal next_arg .
+
+    $default  reduce using rule 14 (optional_arguments)
+
+
+State 130
+
+   18 formal: optional_var IDENTIFIER . next_id COLON type
+
+    COMMA  shift, and go to state 91
+
+    $default  reduce using rule 11 (next_id)
+
+    next_id  go to state 145
+
+
+State 131
+
+   12 header: PROCEDURE IDENTIFIER OP_PAR optional_arguments CLOS_PAR .
+
+    $default  reduce using rule 12 (header)
+
+
+State 132
+
+   10 next_id: COMMA IDENTIFIER next_id .
+
+    $default  reduce using rule 10 (next_id)
+
+
+State 133
+
+   25 type: ARRAY . optional_size OF type
+
+    OP_BRACK  shift, and go to state 146
+
+    $default  reduce using rule 28 (optional_size)
+
+    optional_size  go to state 147
+
+
+State 134
+
+   26 type: CARET . type
+
+    ARRAY    shift, and go to state 133
+    CARET    shift, and go to state 134
+    BOOLEAN  shift, and go to state 135
+    CHAR     shift, and go to state 136
+    INTEGER  shift, and go to state 137
+    REAL     shift, and go to state 138
+
+    type  go to state 148
+
+
+State 135
+
+   23 type: BOOLEAN .
+
+    $default  reduce using rule 23 (type)
+
+
+State 136
+
+   24 type: CHAR .
+
+    $default  reduce using rule 24 (type)
+
+
+State 137
+
+   21 type: INTEGER .
+
+    $default  reduce using rule 21 (type)
+
+
+State 138
+
+   22 type: REAL .
+
+    $default  reduce using rule 22 (type)
+
+
+State 139
+
+    4 local: VAR IDENTIFIER next_id COLON type . SEMI_COLON next_var
+
+    SEMI_COLON  shift, and go to state 149
+
+
+State 140
+
+   43 optional_else: ELSE . stmt
+
+    DISPOSE         shift, and go to state 16
+    NEW             shift, and go to state 17
+    AT              shift, and go to state 18
+    BEGIN_ST        shift, and go to state 6
+    IF              shift, and go to state 19
+    WHILE           shift, and go to state 20
+    NOT             shift, and go to state 21
+    UPLUS           shift, and go to state 22
+    UMINUS          shift, and go to state 23
+    RESULT          shift, and go to state 24
+    RETURN          shift, and go to state 25
+    GOTO            shift, and go to state 26
+    IDENTIFIER      shift, and go to state 27
+    INT_CONST       shift, and go to state 28
+    REAL_CONST      shift, and go to state 29
+    CHAR_CONST      shift, and go to state 30
+    STRING_LITERAL  shift, and go to state 31
+    TRUE            shift, and go to state 32
+    FALSE           shift, and go to state 33
+    NIL             shift, and go to state 34
+    OP_PAR          shift, and go to state 35
+
+    $default  reduce using rule 32 (stmt)
+
+    block    go to state 36
+    stmt     go to state 150
+    expr     go to state 38
+    l_value  go to state 39
+    r_value  go to state 40
+    const    go to state 41
+    call     go to state 42
+    unop     go to state 43
+
+
+State 141
+
+   36 stmt: IF expr THEN stmt optional_else .
+
+    $default  reduce using rule 36 (stmt)
+
+
+State 142
+
+   55 l_value: expr . CARET
+   62 r_value: expr . binop expr
+   70 optional_parameters: IDENTIFIER OP_PAR expr . next_expr CLOS_PAR
+
+    CARET      shift, and go to state 69
+    AND        shift, and go to state 70
+    OR         shift, and go to state 71
+    COMMA      shift, and go to state 151
+    PLUS       shift, and go to state 72
+    MINUS      shift, and go to state 73
+    MUL        shift, and go to state 74
+    DIV        shift, and go to state 75
+    INT_DIV    shift, and go to state 76
+    MOD        shift, and go to state 77
+    EQUAL      shift, and go to state 78
+    NOT_EQUAL  shift, and go to state 79
+    GT         shift, and go to state 80
+    LT         shift, and go to state 81
+    GE         shift, and go to state 82
+    LE         shift, and go to state 83
+
+    $default  reduce using rule 73 (next_expr)
+
+    next_expr  go to state 152
+    binop      go to state 84
+
+
+State 143
+
+   13 header: FUNCTION IDENTIFIER OP_PAR optional_arguments CLOS_PAR COLON . type
+
+    ARRAY    shift, and go to state 133
+    CARET    shift, and go to state 134
+    BOOLEAN  shift, and go to state 135
+    CHAR     shift, and go to state 136
+    INTEGER  shift, and go to state 137
+    REAL     shift, and go to state 138
+
+    type  go to state 153
+
+
+State 144
+
+   16 next_arg: SEMI_COLON formal . next_arg
+
+    SEMI_COLON  shift, and go to state 128
+
+    $default  reduce using rule 17 (next_arg)
+
+    next_arg  go to state 154
+
+
+State 145
+
+   18 formal: optional_var IDENTIFIER next_id . COLON type
+
+    COLON  shift, and go to state 155
+
+
+State 146
+
+   27 optional_size: OP_BRACK . INT_CONST CLOS_BRACK
+
+    INT_CONST  shift, and go to state 156
+
+
+State 147
+
+   25 type: ARRAY optional_size . OF type
+
+    OF  shift, and go to state 157
+
+
+State 148
+
+   26 type: CARET type .
+
+    $default  reduce using rule 26 (type)
+
+
+State 149
+
+    4 local: VAR IDENTIFIER next_id COLON type SEMI_COLON . next_var
+
+    IDENTIFIER  shift, and go to state 158
+
+    $default  reduce using rule 9 (next_var)
+
+    next_var  go to state 159
+
+
+State 150
+
+   43 optional_else: ELSE stmt .
+
+    $default  reduce using rule 43 (optional_else)
+
+
+State 151
+
+   72 next_expr: COMMA . expr next_expr
+
+    AT              shift, and go to state 18
+    NOT             shift, and go to state 21
+    UPLUS           shift, and go to state 22
+    UMINUS          shift, and go to state 23
+    RESULT          shift, and go to state 24
+    IDENTIFIER      shift, and go to state 56
+    INT_CONST       shift, and go to state 28
+    REAL_CONST      shift, and go to state 29
+    CHAR_CONST      shift, and go to state 30
+    STRING_LITERAL  shift, and go to state 31
+    TRUE            shift, and go to state 32
+    FALSE           shift, and go to state 33
+    NIL             shift, and go to state 34
+    OP_PAR          shift, and go to state 35
+
+    expr     go to state 160
+    l_value  go to state 60
+    r_value  go to state 40
+    const    go to state 41
+    call     go to state 58
+    unop     go to state 43
+
+
+State 152
+
+   70 optional_parameters: IDENTIFIER OP_PAR expr next_expr . CLOS_PAR
+
+    CLOS_PAR  shift, and go to state 161
+
+
+State 153
+
+   13 header: FUNCTION IDENTIFIER OP_PAR optional_arguments CLOS_PAR COLON type .
+
+    $default  reduce using rule 13 (header)
+
+
+State 154
+
+   16 next_arg: SEMI_COLON formal next_arg .
+
+    $default  reduce using rule 16 (next_arg)
+
+
+State 155
+
+   18 formal: optional_var IDENTIFIER next_id COLON . type
+
+    ARRAY    shift, and go to state 133
+    CARET    shift, and go to state 134
+    BOOLEAN  shift, and go to state 135
+    CHAR     shift, and go to state 136
+    INTEGER  shift, and go to state 137
+    REAL     shift, and go to state 138
+
+    type  go to state 162
+
+
+State 156
+
+   27 optional_size: OP_BRACK INT_CONST . CLOS_BRACK
+
+    CLOS_BRACK  shift, and go to state 163
+
+
+State 157
+
+   25 type: ARRAY optional_size OF . type
+
+    ARRAY    shift, and go to state 133
+    CARET    shift, and go to state 134
+    BOOLEAN  shift, and go to state 135
+    CHAR     shift, and go to state 136
+    INTEGER  shift, and go to state 137
+    REAL     shift, and go to state 138
+
+    type  go to state 164
+
+
+State 158
+
+    8 next_var: IDENTIFIER . next_id COLON type SEMI_COLON next_var
+
+    COMMA  shift, and go to state 91
+
+    $default  reduce using rule 11 (next_id)
+
+    next_id  go to state 165
+
+
+State 159
+
+    4 local: VAR IDENTIFIER next_id COLON type SEMI_COLON next_var .
+
+    $default  reduce using rule 4 (local)
+
+
+State 160
+
+   55 l_value: expr . CARET
+   62 r_value: expr . binop expr
+   72 next_expr: COMMA expr . next_expr
+
+    CARET      shift, and go to state 69
+    AND        shift, and go to state 70
+    OR         shift, and go to state 71
+    COMMA      shift, and go to state 151
+    PLUS       shift, and go to state 72
+    MINUS      shift, and go to state 73
+    MUL        shift, and go to state 74
+    DIV        shift, and go to state 75
+    INT_DIV    shift, and go to state 76
+    MOD        shift, and go to state 77
+    EQUAL      shift, and go to state 78
+    NOT_EQUAL  shift, and go to state 79
+    GT         shift, and go to state 80
+    LT         shift, and go to state 81
+    GE         shift, and go to state 82
+    LE         shift, and go to state 83
+
+    $default  reduce using rule 73 (next_expr)
+
+    next_expr  go to state 166
+    binop      go to state 84
+
+
+State 161
+
+   70 optional_parameters: IDENTIFIER OP_PAR expr next_expr CLOS_PAR .
+
+    $default  reduce using rule 70 (optional_parameters)
+
+
+State 162
+
+   18 formal: optional_var IDENTIFIER next_id COLON type .
+
+    $default  reduce using rule 18 (formal)
+
+
+State 163
+
+   27 optional_size: OP_BRACK INT_CONST CLOS_BRACK .
+
+    $default  reduce using rule 27 (optional_size)
+
+
+State 164
+
+   25 type: ARRAY optional_size OF type .
+
+    $default  reduce using rule 25 (type)
+
+
+State 165
+
+    8 next_var: IDENTIFIER next_id . COLON type SEMI_COLON next_var
+
+    COLON  shift, and go to state 167
+
+
+State 166
+
+   72 next_expr: COMMA expr next_expr .
+
+    $default  reduce using rule 72 (next_expr)
+
+
+State 167
+
+    8 next_var: IDENTIFIER next_id COLON . type SEMI_COLON next_var
+
+    ARRAY    shift, and go to state 133
+    CARET    shift, and go to state 134
+    BOOLEAN  shift, and go to state 135
+    CHAR     shift, and go to state 136
+    INTEGER  shift, and go to state 137
+    REAL     shift, and go to state 138
+
+    type  go to state 168
+
+
+State 168
+
+    8 next_var: IDENTIFIER next_id COLON type . SEMI_COLON next_var
+
+    SEMI_COLON  shift, and go to state 169
+
+
+State 169
+
+    8 next_var: IDENTIFIER next_id COLON type SEMI_COLON . next_var
+
+    IDENTIFIER  shift, and go to state 158
+
+    $default  reduce using rule 9 (next_var)
+
+    next_var  go to state 170
+
+
+State 170
+
+    8 next_var: IDENTIFIER next_id COLON type SEMI_COLON next_var .
+
+    $default  reduce using rule 8 (next_var)

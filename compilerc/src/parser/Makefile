@@ -9,19 +9,25 @@ CC=g++
 CFLAGS=-Wall
 RM=rm -f
 
-parser: compiler.lex.o compiler.tab.o symbol.o symbolc.o
+all: parser
+
+parser: lexer.o parser.o
 	$(CC) $(CFLAGS) -o $@ $^
 
-lexer.lex.cc: lexer.l
-	flex --c++ -t $< > $@
+lexer.cpp: lexer.l
+	flex -s -t $< > $@
 
-compiler.tab.c compiler.tab.h: compiler.y
-	bison -dv $<
+lexer.o: lexer.cpp lexer.hpp parser.hpp
+
+parser.hpp parser.cpp: parser.y
+	bison -dv -o parser.cpp $<
+
+parser.o: parser.cpp lexer.hpp
 
 .PHONY: clean distclean
 
 clean:
-	$(RM) *.o *.cc compiler.tab.* core
+	$(RM) lexer.cpp parser.cpp parser.hpp parser.output *.o
 
 distclean: clean
-	$(RM) compiler
+	$(RM) parser

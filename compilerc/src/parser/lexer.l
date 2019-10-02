@@ -1,4 +1,13 @@
+%option noyywrap
 %x COMMENT
+
+%{
+#include <iostream>
+#include <sstream>
+#include "lexer.hpp"
+#include "parser.hpp"
+int line_num = 1;
+%}
 
 ALPHA            [a-zA-Z]
 DIGIT            [0-9]
@@ -13,7 +22,7 @@ SINGLE_CHARACTER {PRINTABLE}|{ESCAPE_SEQ}
 
 "and"       return AND;
 "array"     return ARRAY;
-"begin"     return BEGIN;
+"begin"     return BEGIN_ST;
 "boolean"   return BOOLEAN;
 "char"      return CHAR;
 "dispose"   return DISPOSE;
@@ -79,8 +88,10 @@ SINGLE_CHARACTER {PRINTABLE}|{ESCAPE_SEQ}
 <COMMENT>"*"     /* nothing */
 <COMMENT>[^*]+   /* nothing */
 <COMMENT><<EOF>> {
-                     std::cerr << "ERROR: Unexpected end of "
-                               << "file within comment section\n"; 
+                     std::stringstream ss;
+                     ss  << "ERROR: Unexpected end of "
+                         << "file within comment section";
+                     yyerror(ss.str());
                      exit(1);
                  }
 
@@ -88,7 +99,15 @@ SINGLE_CHARACTER {PRINTABLE}|{ESCAPE_SEQ}
 .                {
                      std::stringstream ss;
                      ss << "Illegal character with code " 
-                        << (matched()[0] >= 32 ? matched()[0] : '?');
-                     std::cerr << "ERROR: " << ss.str() << '\n';
+                        << (yytext[0] >= 32 ? yytext[0] : '?');
+                     yyerror(ss.str());
                      exit(1);
                  }
+
+%%
+
+void yyerror(std::string msg) {
+    std::cerr << "Error: \"" << msg 
+              << "\" in line " << line_num
+              << '\n';
+}

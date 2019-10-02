@@ -1,10 +1,13 @@
-%flex
+%{
+#include <iostream>
+#include "lexer.hpp"
+%}
 
 %token    EOF_T
 %token    ARRAY OF
 %token    DISPOSE NEW CARET AT
-%token    BEGIN DO END IF THEN ELSE WHILE 
-%token    AND OR NOT
+%token    BEGIN_ST DO END IF THEN ELSE WHILE 
+%token    AND OR NOT UPLUS UMINUS
 %token    BOOLEAN CHAR INTEGER REAL
 %token    FORWARD FUNCTION PROCEDURE PROGRAM RESULT RETURN
 %token    VAR ASSIGN SEMI_COLON DOT COLON COMMA LABEL
@@ -16,6 +19,12 @@
 %token    PLUS MINUS MUL DIV INT_DIV MOD
 %token    EQUAL NOT_EQUAL GT LT GE LE
 %token    OP_PAR CLOS_PAR OP_BRACK CLOS_BRACK
+
+%left     PLUS MINUS
+%left     MUL DIV INT_DIV MOD
+%left     UMINUS UPLUS
+
+%expect   1
 
 %start program
  
@@ -31,14 +40,14 @@ body:
 ;
 
 local:
-    VAR IDENTIFIER next_id COLON type SEMI_COLON decl
+    VAR IDENTIFIER next_id COLON type SEMI_COLON next_var
 |   LABEL IDENTIFIER next_id SEMI_COLON
 |   header SEMI_COLON body SEMI_COLON
 |   FORWARD header SEMI_COLON
 ;
 
-decl:
-    IDENTIFIER next_id COLON type SEMI_COLON decl
+next_var:
+    IDENTIFIER next_id COLON type SEMI_COLON next_var
 |   /* empty */
 ;
 
@@ -63,8 +72,12 @@ next_arg:
 ;
 
 formal:
-    VAR IDENTIFIER next_id COLON type
-|   IDENTIFIER next_id COLON type
+    optional_var IDENTIFIER next_id COLON type
+;
+
+optional_var:
+    VAR
+|   /* empty */
 ;
 
 type:
@@ -72,13 +85,17 @@ type:
 |   REAL
 |   BOOLEAN
 |   CHAR
-|   ARRAY OF type
-|   ARRAY OP_BRACK INT_CONST CLOS_BRACK OF type
+|   ARRAY optional_size OF type
 |   CARET type
 ;
 
+optional_size:
+    OP_BRACK INT_CONST CLOS_BRACK
+|   /* empty */
+;
+
 block:
-    BEGIN stmt next_stmt END
+    BEGIN_ST stmt next_stmt END
 ;
 
 next_stmt:
@@ -91,40 +108,28 @@ stmt:
 |   l_value ASSIGN expr
 |   block
 |   call
-|   if_stmt
+|   IF expr THEN stmt optional_else
 |   WHILE expr DO stmt
 |   IDENTIFIER COLON stmt
 |   GOTO IDENTIFIER
 |   RETURN
-|   NEW l_value
-|   NEW OP_BRACK expr CLOS_BRACK l_value
-|   DISPOSE l_value
-|   DISPOSE OP_BRACK CLOS_BRACK l_value
+|   NEW optional_expr l_value
+|   DISPOSE optional_bracket l_value
 ;
 
-full_stmt:
-    /* empty */
-|   l_value ASSIGN expr
-|   block
-|   call
-|   full_if
-|   WHILE expr DO stmt
-|   IDENTIFIER COLON stmt
-|   GOTO IDENTIFIER
-|   RETURN
-|   NEW l_value
-|   NEW OP_BRACK expr CLOS_BRACK l_value
-|   DISPOSE l_value
-|   DISPOSE OP_BRACK CLOS_BRACK l_value
+optional_else:
+    ELSE stmt
+|   /* empty */
 ;
 
-full_if:
-    IF expr THEN full_stmt ELSE full_stmt
+optional_expr:
+    OP_BRACK expr CLOS_BRACK
+|   /* empty */
 ;
 
-if_stmt:
-    IF expr THEN full_stmt ELSE stmt
-|   IF expr THEN stmt
+optional_bracket:
+    OP_BRACK CLOS_BRACK
+|   /* empty */
 ;
 
 expr:
@@ -146,7 +151,7 @@ r_value:
 |   OP_PAR r_value CLOS_PAR
 |   call
 |   AT l_value
-|   unop expr %prec UMINUS
+|   unop expr
 |   expr binop expr
 ;
 
@@ -160,8 +165,12 @@ const:
 ;
 
 call:
-    IDENTIFIER OP_PAR CLOS_PAR
-|   IDENTIFIER OP_PAR expr next_expr CLOS_PAR
+    IDENTIFIER OP_PAR optional_parameters CLOS_PAR
+;
+
+optional_parameters:
+    IDENTIFIER OP_PAR expr next_expr CLOS_PAR
+|   /* empty */
 ;
 
 next_expr:
@@ -177,3 +186,11 @@ binop:
     PLUS | MINUS | MUL| DIV | INT_DIV | MOD | OR | AND
 |   EQUAL | NOT_EQUAL | LT | LE | GT | GE
 ;
+
+%%
+
+int main() {
+    int result = yyparse();
+    if (result == 0) std::cout << "Parsing successful.\n";
+    return result;
+}
