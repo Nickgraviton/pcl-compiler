@@ -26,7 +26,7 @@ SINGLE_CHARACTER {PRINTABLE}|{ESCAPE_SEQ}
 "boolean"   return BOOLEAN;
 "char"      return CHAR;
 "dispose"   return DISPOSE;
-"dive"      return INT_DIV;
+"div"      return INT_DIV;
 "do"        return DO;
 "else"      return ELSE;
 "end"       return END;
@@ -81,10 +81,12 @@ SINGLE_CHARACTER {PRINTABLE}|{ESCAPE_SEQ}
 \'{SINGLE_CHARACTER}?\'       return CHAR_CONST;
 \"{SINGLE_CHARACTER}*\"       return STRING_LITERAL;
 
-[ \t\r\n]          /* nothing */
+[ \t\r]          /* nothing */
+\n               ++line_num;
 
 "(*"             BEGIN(COMMENT);
 <COMMENT>"*)"    BEGIN(INITIAL);
+<COMMENT>\n      ++line_num;
 <COMMENT>"*"     /* nothing */
 <COMMENT>[^*]+   /* nothing */
 <COMMENT><<EOF>> {
@@ -95,7 +97,6 @@ SINGLE_CHARACTER {PRINTABLE}|{ESCAPE_SEQ}
                      exit(1);
                  }
 
-<<EOF>>          return EOF_T;
 .                {
                      std::stringstream ss;
                      ss << "Illegal character with code " 

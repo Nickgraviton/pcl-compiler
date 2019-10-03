@@ -90,7 +90,7 @@ single_character {printable}|{escape_seq}
 "boolean"   return T_boolean;
 "char"      return T_char;
 "dispose"   return T_dispose;
-"dive"      return T_int_div;
+"div"      return T_int_div;
 "do"        return T_do;
 "else"      return T_else;
 "end"       return T_end;

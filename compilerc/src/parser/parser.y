@@ -3,7 +3,8 @@
 #include "lexer.hpp"
 %}
 
-%token    EOF_T
+%define parse.error verbose
+
 %token    ARRAY OF
 %token    DISPOSE NEW CARET AT
 %token    BEGIN_ST DO END IF THEN ELSE WHILE 
@@ -180,7 +181,7 @@ call:
 ;
 
 optional_parameters:
-    IDENTIFIER OP_PAR expr next_expr CLOS_PAR
+    expr next_expr
 |   /* empty */
 ;
 
