@@ -1,27 +1,37 @@
-#**********************************************************************
+#*********************************************************************
 #* The following automatic variables were used:
 #*     $@ : The file name of the target of the rule
 #*     $^ : The names of all the prerequisites with spaces between them
 #*     $< : The name of the first prerequisite
 #**********************************************************************
 
-CC=g++
+CXX=clang++
 CFLAGS=-Wall
 RM=rm -f
 
+all: pcl
 
-all: lexer
+pcl: lexer.o parser.o ast.o pcl.o
+	$(CXX) $(CFLAGS) -o $@ $^
+
+pcl.o: pcl.cpp parser.hpp
+
+ast.o: ast.cpp
 
 lexer.cpp: lexer.l
 	flex -s -t $< > $@
-lexer: lexer.cpp
-	$(CC) $(FLAGS) $< -o $@
 
+lexer.o: lexer.cpp parser.hpp
+
+parser.hpp parser.cpp: parser.y
+	bison -dv -o parser.cpp $<
+
+parser.o: parser.cpp
 
 .PHONY: clean distclean
 
 clean:
-	$(RM) lexer.cpp
+	$(RM) lexer.cpp parser.cpp parser.hpp parser.output *.o
 
 distclean: clean
-	$(RM) lexer
+	$(RM) pcl

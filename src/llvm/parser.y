@@ -110,8 +110,7 @@ next_stmt:
 ;
 
 stmt:
-    /* empty */
-|   l_value ASSIGN expr
+    l_value ASSIGN expr
 |   block
 |   call
 |   IF expr THEN stmt
@@ -122,6 +121,7 @@ stmt:
 |   RETURN
 |   NEW optional_expr l_value
 |   DISPOSE optional_bracket l_value
+|   /* empty */
 ;
 
 optional_expr:
@@ -195,9 +195,3 @@ unop:
 ;
 
 %%
-
-int main() {
-    int result = yyparse();
-    if (result == 0) std::cout << "Parsing successful.\n";
-    return result;
-}

@@ -1,0 +1,13 @@
+# Object files
+*.o
+
+# Executables
+lexer
+parser
+pcl
+
+#Intermediate files
+lexer.cpp
+parser.hpp
+parser.cpp
+parser.output

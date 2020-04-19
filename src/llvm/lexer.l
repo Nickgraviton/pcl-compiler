@@ -26,7 +26,7 @@ SINGLE_CHARACTER {PRINTABLE}|{ESCAPE_SEQ}
 "boolean"   return BOOLEAN;
 "char"      return CHAR;
 "dispose"   return DISPOSE;
-"div"      return INT_DIV;
+"div"       return INT_DIV;
 "do"        return DO;
 "else"      return ELSE;
 "end"       return END;
@@ -89,21 +89,17 @@ SINGLE_CHARACTER {PRINTABLE}|{ESCAPE_SEQ}
 <COMMENT>\n      ++line_num;
 <COMMENT>"*"     /* nothing */
 <COMMENT>[^*]+   /* nothing */
-<COMMENT><<EOF>> {
-                     std::stringstream ss;
-                     ss  << "ERROR: Unexpected end of "
-                         << "file within comment section";
-                     yyerror(ss.str());
-                     exit(1);
-                 }
+<COMMENT><<EOF>> { std::stringstream ss;
+                   ss  << "ERROR: Unexpected end of "
+                       << "file within comment section";
+                   yyerror(ss.str());
+                   exit(1); }
 
-.                {
-                     std::stringstream ss;
-                     ss << "Illegal character with code " 
-                        << (yytext[0] >= 32 ? yytext[0] : '?');
-                     yyerror(ss.str());
-                     exit(1);
-                 }
+.                { std::stringstream ss;
+                   ss << "Illegal character with code " 
+                      << (yytext[0] >= 32 ? yytext[0] : '?');
+                   yyerror(ss.str());
+                   exit(1); }
 
 %%
 
