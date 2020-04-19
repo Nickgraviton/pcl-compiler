@@ -6,13 +6,14 @@
 #**********************************************************************
 
 CXX=clang++
-CFLAGS=-Wall
+CXXFLAGS=-Wall $(shell llvm-config --cxxflags)
+LDFLAGS=$(shell llvm-config --ldflags --system-libs --libs all)
 RM=rm -f
 
 all: pcl
 
 pcl: lexer.o parser.o ast.o pcl.o
-	$(CXX) $(CFLAGS) -o $@ $^
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
 pcl.o: pcl.cpp parser.hpp
 

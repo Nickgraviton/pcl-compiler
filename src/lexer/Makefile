@@ -6,7 +6,7 @@
 #**********************************************************************
 
 CXX=clang++
-CFLAGS=-Wall
+CXXFLAGS=-Wall
 RM=rm -f
 
 
@@ -15,7 +15,7 @@ all: lexer
 lexer.cpp: lexer.l
 	flex -s -t $< > $@
 lexer: lexer.cpp
-	$(CXX) $(FLAGS) $< -o $@
+	$(CXX) $(CXXFLAGS) $< -o $@
 
 
 .PHONY: clean distclean

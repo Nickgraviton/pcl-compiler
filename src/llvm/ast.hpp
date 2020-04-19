@@ -1,6 +1,10 @@
 #ifndef __AST_HPP__
 #define __AST_HPP__
 
+#include <llvm/IR/Value.h>
+
+using namespace llvm;
+
 class AST {
 public:
     virtual ~AST() {}

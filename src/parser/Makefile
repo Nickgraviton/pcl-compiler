@@ -6,13 +6,13 @@
 #**********************************************************************
 
 CXX=clang++
-CFLAGS=-Wall
+CXXFLAGS=-Wall
 RM=rm -f
 
 all: parser
 
 parser: lexer.o parser.o
-	$(CXX) $(CFLAGS) -o $@ $^
+	$(CXX) $(CXXFLAGS) -o $@ $^
 
 lexer.cpp: lexer.l
 	flex -s -t $< > $@
