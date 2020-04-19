@@ -6,8 +6,12 @@ lexer
 parser
 pcl
 
-#Intermediate files
+# Intermediate files
 lexer.cpp
 parser.hpp
 parser.cpp
 parser.output
+
+# Directories
+!lexer/
+!parser/
