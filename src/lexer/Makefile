@@ -15,7 +15,7 @@ all: lexer
 lexer.cpp: lexer.l
 	flex -s -t $< > $@
 lexer: lexer.cpp
-	$(CC) $(FLAGS) $< -o $@
+	$(CXX) $(FLAGS) $< -o $@
 
 
 .PHONY: clean distclean

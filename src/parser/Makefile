@@ -12,7 +12,7 @@ RM=rm -f
 all: parser
 
 parser: lexer.o parser.o
-	$(CC) $(CFLAGS) -o $@ $^
+	$(CXX) $(CFLAGS) -o $@ $^
 
 lexer.cpp: lexer.l
 	flex -s -t $< > $@

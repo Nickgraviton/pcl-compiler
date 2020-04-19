@@ -1,17 +1,20 @@
 #ifndef __AST_HPP__
 #define __AST_HPP__
 
-/*using namespace llvm;
-
 class AST {
 public:
     virtual ~AST() {}
     virtual Value *codegen() = 0;
-protected:
-    static LLVMContext TheContext;
-    static IRBuilder<> Builder(TheContext);
-    static std::unique_ptr<Module> TheModule;
-    static std::map<std::string, Value *> NamedValues;
-};*/
+};
+
+class Expr:  public AST {};
+class Stmt:  public AST {};
+
+class Id:    public Expr {};
+class Const: public Expr {};
+class Binop: public Expr {};
+class If:    public Expr {};
+class For:   public Stmt {};
+class Block: public Stmt {};
 
 #endif
