@@ -13,99 +13,98 @@ public:
     virtual Value *codegen() = 0;
 };
 
-/***********************LANGUAGE TYPES***********************/
-
-/* Name: integer
- * Size: At least 2 bytes
- * Info: Two's compliment representation
- */
-class Integer: public Node {
-    int val;
-public:
-    Value *codegen() override;
-};
-
-/* 
- * Name: boolean
- * Size: 1 byte
- * Info: false(=0) and true(=1)
- */
+// Name: boolean
+// Size: 1 byte
+// Info: false(=0) and true(=1)
 class Boolean: public Node {
     bool val;
 public:
     Value *codegen() override;
 };
 
-/* 
- * Name: char
- * Size: 1 byte
- * Info: ASCII representation
- */
+// Name: char
+// Size: 1 byte
+// Info: ASCII representation
 class Char: public Node {
     char val;
 public:
     Value *codegen() override;
 };
 
-/* 
- * Name: real
- * Size: 10 bytes
- * Info: IEEE 754 representation
- */
+// Name: integer
+// Size: At least 2 bytes
+//Info: Two's compliment representation
+class Integer: public Node {
+    int val;
+public:
+    Value *codegen() override;
+};
+
+// Name: real
+// Size: 10 bytes
+// Info: IEEE 754 representation
 class Real: public Node {
     double val;
 public:
     Value *codegen() override;
 };
 
-/* 
- * Name: array[n] of t
- * Size: n * sizeof(t) bytes
- * Info: Increasing order of addresses
- */
+// Name: array[n] of t
+// Size: n * sizeof(t) bytes
+// Info: Increasing order of addresses
 class Array_n: public Node {
 public:
     Value *codegen() override;
 };
 
-/* 
- * Name: array of t
- * Info: Unknown number of elements
- */
+// Name: array of t
+// Info: Unknown number of elements
 class Array: public Node {
 public:
     Value *codegen() override;
 };
 
-/* 
- * Name: ^t
- * Size: 2 bytes
- * Info: Pointer to valid type t
- */
-class Pointers: public Node {
+// Name: ^t
+// Size: 2 bytes
+// Info: Pointer to valid type t
+class Pointer: public Node {
 public:
     Value *codegen() override;
 };
 
 class Var: public Node {
+public:
+    Value *codegen() override;
 };
 
 class BinOp: public Node {
+public:
+    Value *codegen() override;
 };
 
 class If: public Node {
+public:
+    Value *codegen() override;
 };
 
 class For: public Node {
+public:
+    Value *codegen() override;
 };
 
 class Block: public Node {
+public:
+    Value *codegen() override;
 };
 
-class Function: public Node {
+class Fun: public Node {
+public:
+    Value *codegen() override;
 };
 
 class While: public Node {
+public:
+    Value *codegen() override;
 };
 
 #endif
