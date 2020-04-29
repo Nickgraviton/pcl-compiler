@@ -1,6 +1,9 @@
 %{
 #include <iostream>
+#include "ast.hpp"
 #include "lexer.hpp"
+
+std::unique_ptr<Node> root;
 %}
 
 %define parse.error verbose

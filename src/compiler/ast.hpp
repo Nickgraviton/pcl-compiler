@@ -1,6 +1,8 @@
 #ifndef __AST_HPP__
 #define __AST_HPP__
 
+#include <vector>
+
 #include <llvm/IR/Value.h>
 
 using namespace llvm;
@@ -13,96 +15,197 @@ public:
     virtual Value *codegen() = 0;
 };
 
+class Stmt: public Node {};
+class Expr: public Node {};
+
+//------------------------------------------------------------//
+//--------------------Constant expressions--------------------//
+//------------------------------------------------------------//
+
 // Name: boolean
 // Size: 1 byte
 // Info: false(=0) and true(=1)
-class Boolean: public Node {
+class Boolean: public Expr {
     bool val;
+
 public:
+    Boolean(bool val) : val(val) {}
+
     Value *codegen() override;
 };
 
 // Name: char
 // Size: 1 byte
 // Info: ASCII representation
-class Char: public Node {
+class Char: public Expr {
     char val;
+
 public:
+    Char(char val) : val(val) {}
+
     Value *codegen() override;
 };
 
 // Name: integer
 // Size: At least 2 bytes
-//Info: Two's compliment representation
-class Integer: public Node {
+// Info: Two's compliment representation
+class Integer: public Expr {
     int val;
+
 public:
+    Integer(int val) : val(val) {}
+
     Value *codegen() override;
 };
 
 // Name: real
 // Size: 10 bytes
 // Info: IEEE 754 representation
-class Real: public Node {
+class Real: public Expr {
     double val;
+
+public:
+    Real(double val) : val(val) {}
+
+    Value *codegen() override;
+};
+
+// Type: array[n] of char
+// Info: Null terminated string literal
+class String: public Expr {
+    std::string val;
+
+public:
+    String(std::string val) : val(val) {}
+
+    Value *codegen() override;   
+};
+
+// Name: nil
+// Type: ^t for any valid type t
+// Info: Null pointer. Cannot be dereferenced
+class Nil: public Expr {
+public:
+    Nil() {}
+
+    Value *codegen() override;
+};
+
+//------------------------------------------------------------//
+//--------------Variables and Binary expressions--------------//
+//------------------------------------------------------------//
+
+// Variable expression
+class Variable: public Expr {
+    std::string name;
+
+public:
+    Variable(std::string name) : name(name) {}
+
+    Value *codegen() override;
+};
+
+// Binary expression using arithmetic, comparison or logical operators
+class BinaryExpr: public Expr {
+    std::string op;
+    std::unique_ptr<Expr> left, right;
+
+public:
+    BinaryExpr(std::string op, std::unique_ptr<Expr> left,
+            std::unique_ptr<Expr> right)
+        : op(op), left(std::move(left)), right(std::move(right)) {}
+
+    Value *codegen() override;
+};
+
+//------------------------------------------------------------//
+//-------------------------Statements-------------------------//
+//------------------------------------------------------------//
+
+// Code block comprised of multiple instructions
+class Block: public Stmt {
+    std::vector<std::unique_ptr<Stmt>> stmt_list;
+
 public:
     Value *codegen() override;
 };
 
-// Name: array[n] of t
-// Size: n * sizeof(t) bytes
-// Info: Increasing order of addresses
-class Array_n: public Node {
+// Variable declaration
+class VarDecl: public Stmt {
+    std::string name, type;
+
+public:
+    VarDecl(std::string name, std::string type) : name(name), type(type) {}
+
+    Value *codegen() override;
+};
+
+// Variable assignment statement
+class VarAssign: public Stmt {
+    std::unique_ptr<Expr> left, right;
+    
+public:
+    VarAssign(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right)
+        : left(std::move(left)), right(std::move(right)) {}
+
+    Value *codegen() override;
+};
+
+// Goto statement that jumps to label in the same block
+class Goto: public Stmt {
+    std::string label;
+
+public:
+    Goto(std::string label) : label(label) {}
+
+    Value *codegen() override;
+};
+
+// If statement with an optional else clause
+class If: public Stmt {
 public:
     Value *codegen() override;
 };
 
-// Name: array of t
-// Info: Unknown number of elements
-class Array: public Node {
+// For loop
+class For: public Stmt {
 public:
     Value *codegen() override;
 };
 
-// Name: ^t
-// Size: 2 bytes
-// Info: Pointer to valid type t
-class Pointer: public Node {
+// While loop
+class While: public Stmt {
 public:
     Value *codegen() override;
 };
 
-class Var: public Node {
+// Two types of functions: procedures and functions
+// Procedures don't return a result
+class Fun: public Stmt {
 public:
     Value *codegen() override;
 };
 
-class BinOp: public Node {
+// Function call
+class Call: public Stmt {
 public:
     Value *codegen() override;
 };
 
-class If: public Node {
+// Return statement
+class Return: public Stmt {
 public:
     Value *codegen() override;
 };
 
-class For: public Node {
+// Dynamic memory allocation
+class New: public Stmt {
 public:
     Value *codegen() override;
 };
 
-class Block: public Node {
-public:
-    Value *codegen() override;
-};
-
-class Fun: public Node {
-public:
-    Value *codegen() override;
-};
-
-class While: public Node {
+// Deallocation of dynamically allocated memory
+class Dispose: public Stmt {
 public:
     Value *codegen() override;
 };

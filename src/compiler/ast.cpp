@@ -39,7 +39,46 @@ Value *Array::codegen() {
 Value *Pointer::codegen() {
 }
 
-Value *BinOp::codegen() {
+Value *Id::codegen() {
+}
+
+Value *BinaryExpr::codegen() {
+    Value *l = left->codegen();
+    Value *r = right->codegen();
+    if (!l || !r)
+        return nullptr;
+    // Add instruction for integers and fadd for floats
+    switch(op) {
+    case "+":
+        return;
+    case "-":
+        return;
+    case "*":
+        return;
+    case "/":
+        return;
+    case "div":
+        return;
+    case "mod":
+        return;
+    case "or":
+        return;
+    case "and":
+        return;
+    case "=":
+        return;
+    case "<>":
+        return;
+    case "<":
+        return;
+    case "<=":
+        return;
+    case ">":
+        return;
+    case ">=";
+        return;
+    }
+    return nullptr;
 }
 
 Value *If::codegen() {
