@@ -7,7 +7,7 @@
 
 CXX=clang++
 CXXFLAGS=-Wall $(shell llvm-config --cxxflags)
-LDFLAGS=$(shell llvm-config --ldflags --system-libs --libs all)
+LDFLAGS=$(shell llvm-config --ldflags --libs all)
 RM=rm -f
 
 all: pcl
