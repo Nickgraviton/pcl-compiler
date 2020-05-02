@@ -11,12 +11,19 @@ extern int line_num;
 
 class Node {
 public:
-    virtual ~Node() = default;
-    virtual Value *codegen() = 0;
+  virtual ~Node() = default;
+  virtual Value *codegen() = 0;
 };
 
-class Stmt: public Node {};
-class Expr: public Node {};
+class Stmt : public Node {};
+class Expr : public Node {};
+
+class Program : public Node {
+  std::vector<Stmt> body;
+
+public:
+  Value *codegen() override;
+};
 
 //------------------------------------------------------------//
 //--------------------Constant expressions--------------------//
@@ -25,97 +32,107 @@ class Expr: public Node {};
 // Name: boolean
 // Size: 1 byte
 // Info: false(=0) and true(=1)
-class Boolean: public Expr {
-    bool val;
+class Boolean : public Expr {
+  bool val;
 
 public:
-    Boolean(bool val) : val(val) {}
+  Boolean(bool val) : val(val) {}
 
-    Value *codegen() override;
+  Value *codegen() override;
 };
 
 // Name: char
 // Size: 1 byte
 // Info: ASCII representation
-class Char: public Expr {
-    char val;
+class Char : public Expr {
+  char val;
 
 public:
-    Char(char val) : val(val) {}
+  Char(char val) : val(val) {}
 
-    Value *codegen() override;
+  Value *codegen() override;
 };
 
 // Name: integer
 // Size: At least 2 bytes
 // Info: Two's compliment representation
-class Integer: public Expr {
-    int val;
+class Integer : public Expr {
+  int val;
 
 public:
-    Integer(int val) : val(val) {}
+  Integer(int val) : val(val) {}
 
-    Value *codegen() override;
+  Value *codegen() override;
 };
 
 // Name: real
 // Size: 10 bytes
 // Info: IEEE 754 representation
-class Real: public Expr {
-    double val;
+class Real : public Expr {
+  double val;
 
 public:
-    Real(double val) : val(val) {}
+  Real(double val) : val(val) {}
 
-    Value *codegen() override;
+  Value *codegen() override;
 };
 
 // Type: array[n] of char
 // Info: Null terminated string literal
-class String: public Expr {
-    std::string val;
+class String : public Expr {
+  std::string val;
 
 public:
-    String(std::string val) : val(val) {}
+  String(std::string val) : val(val) {}
 
-    Value *codegen() override;   
+  Value *codegen() override;
 };
 
 // Name: nil
 // Type: ^t for any valid type t
 // Info: Null pointer. Cannot be dereferenced
-class Nil: public Expr {
+class Nil : public Expr {
 public:
-    Nil() {}
+  Nil() {}
 
-    Value *codegen() override;
+  Value *codegen() override;
 };
 
 //------------------------------------------------------------//
-//--------------Variables and Binary expressions--------------//
+//------------Variables, Unary and Binary operators-----------//
 //------------------------------------------------------------//
 
 // Variable expression
-class Variable: public Expr {
-    std::string name;
+class Variable : public Expr {
+  std::string name;
 
 public:
-    Variable(std::string name) : name(name) {}
+  Variable(std::string name) : name(name) {}
 
-    Value *codegen() override;
+  Value *codegen() override;
 };
 
 // Binary expression using arithmetic, comparison or logical operators
-class BinaryExpr: public Expr {
-    std::string op;
-    std::unique_ptr<Expr> left, right;
+class BinaryOp : public Expr {
+  std::string op;
+  std::unique_ptr<Expr> left, right;
 
 public:
-    BinaryExpr(std::string op, std::unique_ptr<Expr> left,
-            std::unique_ptr<Expr> right)
-        : op(op), left(std::move(left)), right(std::move(right)) {}
+  BinaryExpr(std::string op, std::unique_ptr<Expr> left,
+             std::unique_ptr<Expr> right)
+      : op(op), left(std::move(left)), right(std::move(right)) {}
 
-    Value *codegen() override;
+  Value *codegen() override;
+};
+
+// Unary operator one of: not, +, -
+class UnaryOp : public Expr {
+  std::string op;
+  std::unique_ptr<Expr> operand;
+
+public:
+  UnaryOp(std::string op, std::unique_ptr<Expr> operand)
+      : op(op), operand(std::move(operand)) {}
 };
 
 //------------------------------------------------------------//
@@ -123,91 +140,110 @@ public:
 //------------------------------------------------------------//
 
 // Code block comprised of multiple instructions
-class Block: public Stmt {
-    std::vector<std::unique_ptr<Stmt>> stmt_list;
+class Block : public Stmt {
+  std::vector<std::unique_ptr<Stmt>> stmt_list;
 
 public:
-    Value *codegen() override;
+  Value *codegen() override;
 };
 
 // Variable declaration
-class VarDecl: public Stmt {
-    std::string name, type;
+class VarDecl : public Stmt {
+  std::string name, type;
 
 public:
-    VarDecl(std::string name, std::string type) : name(name), type(type) {}
+  VarDecl(std::string name, std::string type) : name(name), type(type) {}
 
-    Value *codegen() override;
+  Value *codegen() override;
 };
 
 // Variable assignment statement
-class VarAssign: public Stmt {
-    std::unique_ptr<Expr> left, right;
-    
-public:
-    VarAssign(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right)
-        : left(std::move(left)), right(std::move(right)) {}
+class VarAssign : public Stmt {
+  std::unique_ptr<Expr> left, right;
 
-    Value *codegen() override;
+public:
+  VarAssign(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right)
+      : left(std::move(left)), right(std::move(right)) {}
+
+  Value *codegen() override;
 };
 
 // Goto statement that jumps to label in the same block
-class Goto: public Stmt {
-    std::string label;
+class Goto : public Stmt {
+  std::string label;
 
 public:
-    Goto(std::string label) : label(label) {}
+  Goto(std::string label) : label(label) {}
 
-    Value *codegen() override;
+  Value *codegen() override;
+};
+
+class Label : public Stmt {
+  std::string label;
+
+public:
+  Label(std::string label) : label(label) {}
+
+  Value *codegen() override;
 };
 
 // If statement with an optional else clause
-class If: public Stmt {
+class If : public Stmt {
 public:
-    Value *codegen() override;
+  Value *codegen() override;
 };
 
 // For loop
-class For: public Stmt {
+class For : public Stmt {
 public:
-    Value *codegen() override;
+  Value *codegen() override;
 };
 
 // While loop
-class While: public Stmt {
+class While : public Stmt {
 public:
-    Value *codegen() override;
+  Value *codegen() override;
+};
+
+// Formal parameters for functions
+class Formal : public Stmt {
+  std::string name, type;
+
+public:
+  Formal(std::string name, std::string type) : name(name), type(type) {}
 };
 
 // Two types of functions: procedures and functions
 // Procedures don't return a result
-class Fun: public Stmt {
+class Fun : public Stmt {
+  std::vector<unique_ptr<Formal>> formal_parameters;
+
 public:
-    Value *codegen() override;
+  Value *codegen() override;
 };
 
 // Function call
-class Call: public Stmt {
+class Call : public Stmt {
 public:
-    Value *codegen() override;
+  Value *codegen() override;
 };
 
 // Return statement
-class Return: public Stmt {
+class Return : public Stmt {
 public:
-    Value *codegen() override;
+  Value *codegen() override;
 };
 
 // Dynamic memory allocation
-class New: public Stmt {
+class New : public Stmt {
 public:
-    Value *codegen() override;
+  Value *codegen() override;
 };
 
 // Deallocation of dynamically allocated memory
-class Dispose: public Stmt {
+class Dispose : public Stmt {
 public:
-    Value *codegen() override;
+  Value *codegen() override;
 };
 
 #endif
