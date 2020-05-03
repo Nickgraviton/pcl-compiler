@@ -18,13 +18,6 @@ public:
 class Stmt : public Node {};
 class Expr : public Node {};
 
-class Program : public Node {
-  std::vector<Stmt> body;
-
-public:
-  Value *codegen() override;
-};
-
 //------------------------------------------------------------//
 //--------------------Constant expressions--------------------//
 //------------------------------------------------------------//
@@ -103,11 +96,18 @@ public:
 //------------------------------------------------------------//
 
 // Variable expression
+// name: name of the variable
+// get_addr: boolean flag used with the @ operator signaling to
+//           fetch the address of the variable
+// offset: determines which element of an array to fetch in expressions a[x]
 class Variable : public Expr {
   std::string name;
+  bool get_addr;
+  int offset;
 
 public:
-  Variable(std::string name) : name(name) {}
+  Variable(std::string name, bool get_addr, int offset)
+      : name(name), get_addr(get_addr), offset(offset) {}
 
   Value *codegen() override;
 };
@@ -138,14 +138,6 @@ public:
 //------------------------------------------------------------//
 //-------------------------Statements-------------------------//
 //------------------------------------------------------------//
-
-// Code block comprised of multiple instructions
-class Block : public Stmt {
-  std::vector<std::unique_ptr<Stmt>> stmt_list;
-
-public:
-  Value *codegen() override;
-};
 
 // Variable declaration
 class VarDecl : public Stmt {
@@ -180,28 +172,36 @@ public:
 
 class Label : public Stmt {
   std::string label;
+  std::unique_ptr<Stmt> statement;
 
 public:
-  Label(std::string label) : label(label) {}
+  Label(std::string label, std::unique_ptr<Stmt> statement)
+      : label(label), statement(std::move(statement)) {}
 
   Value *codegen() override;
 };
 
 // If statement with an optional else clause
 class If : public Stmt {
-public:
-  Value *codegen() override;
-};
+  std::unique_ptr<Expr> cond;
+  std::unique_ptr<Stmt> if_statement, else_statement;
 
-// For loop
-class For : public Stmt {
 public:
+  If(std::unique_ptr<Expr> cond, std::unique_ptr<Stmt> if_statement, std::unique_ptr<Stmt> else_statement)
+      : cond(std::move(cond)), if_statement(std::move(if_statement)), else_statement(std::move(else_statement)) {}
+
   Value *codegen() override;
 };
 
 // While loop
 class While : public Stmt {
+  std::unique_ptr<Expr> cond;
+  std::unique_ptr<Stmt> statement;
+
 public:
+  While(std::unique_ptr<Expr> cond, std::unique_ptr<Stmt> statement)
+      : cond(std::move(cond)), statement(std::move(statement)) {}
+
   Value *codegen() override;
 };
 
@@ -211,6 +211,8 @@ class Formal : public Stmt {
 
 public:
   Formal(std::string name, std::string type) : name(name), type(type) {}
+
+  Value *codegen() override;
 };
 
 // Two types of functions: procedures and functions
@@ -224,7 +226,13 @@ public:
 
 // Function call
 class Call : public Stmt {
+    std::string fun_name;
+    std::vector<unique_ptr<Expr>> parameters;
+
 public:
+  Call(std::string fun_name, std::vector<unique_ptr<Expr>> parameters)
+      : fun_name(fun_name), parameters(parameters) {}
+
   Value *codegen() override;
 };
 
@@ -236,13 +244,37 @@ public:
 
 // Dynamic memory allocation
 class New : public Stmt {
+  int size;
+  std::unique_ptr<Expr> l_value;
+
 public:
+  New(int size, std::unique_ptr<Expr> l_value)
+      : size(size), l_values(std::move(l_values)) {}
+
   Value *codegen() override;
 };
 
 // Deallocation of dynamically allocated memory
 class Dispose : public Stmt {
+  bool has_brackets;
+  std::unique_ptr<Expr> l_value;
+
 public:
+  Dispose(bool has_brackets, std::unique_ptr<Expr> l_value)
+      : has_brackets(has_brackets), l_value(std::move(l_value)) {}
+
+  Value *codegen() override;
+};
+
+// Code block comprised of multiple instructions
+class Block : public Stmt {
+  std::vector<std::unique_ptr<Stmt>> stmt_list;
+  std::vector<std::unique_ptr<VarDecl>> decl_list;
+
+public:
+  Block(std::vector<std::unique_ptr<Stmt>> stmt_list, std::vector<std::unique_ptr<VarDecl>> decl_list)
+      : stmt_list(stmt_list), decl_list(decl_list) {}
+
   Value *codegen() override;
 };
 
