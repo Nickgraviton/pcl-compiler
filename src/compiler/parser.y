@@ -51,44 +51,47 @@ next_local:
 ;
 
 local:
-    VAR IDENTIFIER next_id COLON type SEMI_COLON next_var
-|   LABEL IDENTIFIER next_id SEMI_COLON
+    VAR next_id COLON type SEMI_COLON next_var { $$ = $6;
+                                                 $$.push_back(std::make_unique<VarDecl>($2, $4)); }
+|   LABEL next_id SEMI_COLON
 |   header SEMI_COLON body SEMI_COLON
 |   FORWARD header SEMI_COLON
 ;
 
 next_var:
-    next_var IDENTIFIER next_id COLON type SEMI_COLON
-|   /* empty */
+    next_var next_id COLON type SEMI_COLON { $$ = $1;
+                                             $$.push_back(std::make_unique<VarDecl>($2, $4);  }
+|   /* empty */                            { $$ = std::vector<std::unique_ptr<VarDecl>>();    }
 ;
 
 next_id:
-    next_id COMMA IDENTIFIER
-|   /* empty */
+    IDENTIFIER               { $$ = std::vector<std::string>(); $$.push_back($1); }
+|   next_id COMMA IDENTIFIER { $$ = $1; $$.push_back($3);                         }
+|   /* empty */              { $$ = std::vector<std::string>();                   }
 ;
 
 header:
-    PROCEDURE IDENTIFIER OP_PAR optional_arguments CLOS_PAR
-|   FUNCTION IDENTIFIER OP_PAR optional_arguments CLOS_PAR COLON type
+    PROCEDURE IDENTIFIER OP_PAR optional_arguments CLOS_PAR           { $$ = std::make_unique<Fun>($2, $4, "None"); }
+|   FUNCTION IDENTIFIER OP_PAR optional_arguments CLOS_PAR COLON type { $$ = std::make_unique<Fun>($2, $4, $6); }
 ;
 
 optional_arguments:
-    formal next_arg
-|   /* empty */     {}
+    formal next_arg { $$ = $2; $$.push_back($1);                   }
+|   /* empty */     { $$ = std::vector<std::unique_ptr<Formal>>(); }
 ;
 
 next_arg:
-    next_arg SEMI_COLON formal
-|   /* empty */
+    next_arg SEMI_COLON formal { $$ = $1; $$.push_back($3);                   }
+|   /* empty */                { $$ = std::vector<std::unique_ptr<Formal>>(); }
 ;
 
 formal:
-    optional_var IDENTIFIER next_id COLON type
+    optional_var next_id COLON type { $$ = std::make_unique<Formal>($1, $2, $4); }
 ;
 
 optional_var:
-    VAR         { $$ = false; }
-|   /* empty */ { $$ = true;  }
+    VAR         { $$ = true;  }
+|   /* empty */ { $$ = false; }
 ;
 
 type:
@@ -102,7 +105,7 @@ type:
 
 optional_size:
     OP_BRACK INT_CONST CLOS_BRACK { $$ = $2 }
-|   /* empty */                   { $$ = 0 }
+|   /* empty */                   { $$ = 0  }
 ;
 
 block:
@@ -117,8 +120,8 @@ next_stmt:
 
 stmt:
     l_value ASSIGN expr              { $$ = std::make_unique<VarAssign>($1, $3);   }
-|   block                            { $$ = $1                                     }
-|   call                             { $$ = $1                                     }
+|   block                            { $$ = $1;                                    }
+|   call                             { $$ = $1;                                    }
 |   IF expr THEN stmt                { $$ = std::make_unique<If>($2, $4, nullptr); }
 |   IF expr THEN stmt ELSE stmt      { $$ = std::make_unique<If>($2, $4, $6);      }
 |   WHILE expr DO stmt               { $$ = std::make_unique<While>($2, $4);       }
@@ -151,36 +154,36 @@ l_value:
 |   STRING_LITERAL                   { $$ = std::make_unique<String>($1);              }
 |   l_value OP_BRACK expr CLOS_BRACK { $$ = std::make_unique<Variable>($1, false, $3); }
 |   expr CARET                       { $$ = std::make_unique<Variable>($1, true, 0);   }
-|   OP_PAR l_value CLOS_PAR          { $$ = $1;                                        }
+|   OP_PAR l_value CLOS_PAR          { $$ = $2;                                        }
 ;
 
 r_value:
-    INT_CONST               { $$ = std::make_unique<Integer>($1);             }
-|   TRUE                    { $$ = std::make_unique<Boolean>($1);             }
-|   FALSE                   { $$ = std::make_unique<Boolean>($1);             }
-|   REAL_CONST              { $$ = std::make_unique<Real>($1);                }
-|   CHAR_CONST              { $$ = std::make_unique<Char>($1);                }
-|   NIL                     { $$ = std::make_unique<Nil>;                     }
-|   OP_PAR r_value CLOS_PAR { $$ = $2;                                        }
-|   call                    { $$ = $1;                                        }
+    INT_CONST               { $$ = std::make_unique<Integer>($1);                 }
+|   TRUE                    { $$ = std::make_unique<Boolean>($1);                 }
+|   FALSE                   { $$ = std::make_unique<Boolean>($1);                 }
+|   REAL_CONST              { $$ = std::make_unique<Real>($1);                    }
+|   CHAR_CONST              { $$ = std::make_unique<Char>($1);                    }
+|   NIL                     { $$ = std::make_unique<Nil>;                         }
+|   OP_PAR r_value CLOS_PAR { $$ = $2;                                            }
+|   call                    { $$ = $1;                                            }
 |   AT expr                 { $$ = std::make_unique<Variable>($2, true, nullptr); }
     /* Correct rule is `AT l_value` but l_value creates reduce/reduce
        conflict and since r_value is nonassoc we can just leave this as expr*/
-|   unop expr %prec UNOP    { $$ = std::make_unique<UnaryOp>($1, $2);         }
-|   expr PLUS expr          { $$ = std::make_unique<BinaryOp>("+", $1, $3);   }
-|   expr MINUS expr         { $$ = std::make_unique<BinaryOp>("-", $1, $3);   }
-|   expr MUL expr           { $$ = std::make_unique<BinaryOp>("*", $1, $3);   }
-|   expr DIV expr           { $$ = std::make_unique<BinaryOp>("/", $1, $3);   }
-|   expr INT_DIV expr       { $$ = std::make_unique<BinaryOp>("div", $1, $3); }
-|   expr MOD expr           { $$ = std::make_unique<BinaryOp>("mod", $1, $3); }
-|   expr OR expr            { $$ = std::make_unique<BinaryOp>("or", $1, $3);  }
-|   expr AND expr           { $$ = std::make_unique<BinaryOp>("and", $1, $3); }
-|   expr EQUAL expr         { $$ = std::make_unique<BinaryOp>("=", $1, $3);   }
-|   expr NOT_EQUAL expr     { $$ = std::make_unique<BinaryOp>("<>", $1, $3);  }
-|   expr LT expr            { $$ = std::make_unique<BinaryOp>("<", $1, $3);   }
-|   expr LE expr            { $$ = std::make_unique<BinaryOp>("<=", $1, $3);  }
-|   expr GT expr            { $$ = std::make_unique<BinaryOp>(">", $1, $3) ;  }
-|   expr GE expr            { $$ = std::make_unique<BinaryOp>(">=", $1, $3);  }
+|   unop expr %prec UNOP    { $$ = std::make_unique<UnaryOp>($1, $2);             }
+|   expr PLUS expr          { $$ = std::make_unique<BinaryOp>("+", $1, $3);       }
+|   expr MINUS expr         { $$ = std::make_unique<BinaryOp>("-", $1, $3);       }
+|   expr MUL expr           { $$ = std::make_unique<BinaryOp>("*", $1, $3);       }
+|   expr DIV expr           { $$ = std::make_unique<BinaryOp>("/", $1, $3);       }
+|   expr INT_DIV expr       { $$ = std::make_unique<BinaryOp>("div", $1, $3);     }
+|   expr MOD expr           { $$ = std::make_unique<BinaryOp>("mod", $1, $3);     }
+|   expr OR expr            { $$ = std::make_unique<BinaryOp>("or", $1, $3);      }
+|   expr AND expr           { $$ = std::make_unique<BinaryOp>("and", $1, $3);     }
+|   expr EQUAL expr         { $$ = std::make_unique<BinaryOp>("=", $1, $3);       }
+|   expr NOT_EQUAL expr     { $$ = std::make_unique<BinaryOp>("<>", $1, $3);      }
+|   expr LT expr            { $$ = std::make_unique<BinaryOp>("<", $1, $3);       }
+|   expr LE expr            { $$ = std::make_unique<BinaryOp>("<=", $1, $3);      }
+|   expr GT expr            { $$ = std::make_unique<BinaryOp>(">", $1, $3) ;      }
+|   expr GE expr            { $$ = std::make_unique<BinaryOp>(">=", $1, $3);      }
 ;
 
 call:

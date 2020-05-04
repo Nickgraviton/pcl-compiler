@@ -141,10 +141,12 @@ public:
 
 // Variable declaration
 class VarDecl : public Stmt {
-  std::string name, type;
+  std::vector<std::string> names;
+  std::string type;
 
 public:
-  VarDecl(std::string name, std::string type) : name(name), type(type) {}
+  VarDecl(std::vector<std::string> names, std::string type)
+      : names(names), type(type) {}
 
   Value *codegen() override;
 };
@@ -187,8 +189,10 @@ class If : public Stmt {
   std::unique_ptr<Stmt> if_statement, else_statement;
 
 public:
-  If(std::unique_ptr<Expr> cond, std::unique_ptr<Stmt> if_statement, std::unique_ptr<Stmt> else_statement)
-      : cond(std::move(cond)), if_statement(std::move(if_statement)), else_statement(std::move(else_statement)) {}
+  If(std::unique_ptr<Expr> cond, std::unique_ptr<Stmt> if_statement,
+     std::unique_ptr<Stmt> else_statement)
+      : cond(std::move(cond)), if_statement(std::move(if_statement)),
+        else_statement(std::move(else_statement)) {}
 
   Value *codegen() override;
 };
@@ -206,11 +210,17 @@ public:
 };
 
 // Formal parameters for functions
+// Objects contain names of variables that have the same type and pass by
+// value/reference policy
 class Formal : public Stmt {
-  std::string name, type;
+  bool pass_by_reference;
+  std::vector<std::string> names;
+  std::string type;
 
 public:
-  Formal(std::string name, std::string type) : name(name), type(type) {}
+  Formal(bool pass_by_reference, std::vector<std::string> names,
+         std::string type)
+      : pass_by_reference(pass_by_reference), names(names), type(type) {}
 
   Value *codegen() override;
 };
@@ -226,8 +236,8 @@ public:
 
 // Function call
 class Call : public Stmt {
-    std::string fun_name;
-    std::vector<unique_ptr<Expr>> parameters;
+  std::string fun_name;
+  std::vector<unique_ptr<Expr>> parameters;
 
 public:
   Call(std::string fun_name, std::vector<unique_ptr<Expr>> parameters)
@@ -272,7 +282,8 @@ class Block : public Stmt {
   std::vector<std::unique_ptr<VarDecl>> decl_list;
 
 public:
-  Block(std::vector<std::unique_ptr<Stmt>> stmt_list, std::vector<std::unique_ptr<VarDecl>> decl_list)
+  Block(std::vector<std::unique_ptr<Stmt>> stmt_list,
+        std::vector<std::unique_ptr<VarDecl>> decl_list)
       : stmt_list(stmt_list), decl_list(decl_list) {}
 
   Value *codegen() override;
