@@ -15,8 +15,8 @@ public:
   virtual Value *codegen() = 0;
 };
 
-class Stmt : public Node {};
 class Expr : public Node {};
+class Stmt : public Node {};
 
 typedef std::unique_ptr<Expr> expr_ptr;
 typedef std::unique_ptr<Stmt> stmt_ptr;
@@ -132,19 +132,54 @@ class UnaryOp : public Expr {
 
 public:
   UnaryOp(std::string op, expr_ptr operand);
+
+  Value *codegen() override;
 };
 
 //------------------------------------------------------------//
 //-------------------------Statements-------------------------//
 //------------------------------------------------------------//
 
-// Variable declaration
-class VarDecl : public Stmt {
+// Superclass of local declarations
+class Local : public Stmt {};
+
+// Code block comprised of multiple instructions
+class Block : public Stmt {
+  std::vector<stmt_ptr> stmt_list;
+
+public:
+  Block(std::vector<stmt_ptr> stmt_list);
+
+  Value *codegen() override;
+};
+
+// Variable names of the same type
+class VarNames : public Stmt {
   std::vector<std::string> names;
   std::string type;
 
 public:
-  VarDecl(std::vector<std::string> names, std::string type);
+  VarNames(std::vector<std::string> names, std::string type);
+
+  Value *codegen() override;
+};
+
+// Variable declarations
+class VarDecl : public Local {
+  std::vector<std::unique_ptr<VarNames>> var_names;
+
+public:
+  VarDecl(std::vector<std::unique_ptr<VarNames>> var_names);
+
+  Value *codegen() override;
+};
+
+// Label declaration
+class LabelDecl : public Local {
+  std::vector<std::string> names;
+
+public:
+  LabelDecl(std::vector<std::string> names);
 
   Value *codegen() override;
 };
@@ -169,6 +204,7 @@ public:
   Value *codegen() override;
 };
 
+// Label before a statement where we can goto
 class Label : public Stmt {
   std::string label;
   stmt_ptr statement;
@@ -216,16 +252,30 @@ public:
   Value *codegen() override;
 };
 
-// Two types of functions: procedures and functions
-// Procedures don't return a result
-class Fun : public Stmt {
-  std::string fun_name, return_type;
-  std::vector<std::unique_ptr<Formal>> formal_parameters;
+// Body of function or program containing declarations and a block of statements
+class Body : public Stmt {
+  std::vector<std::unique_ptr<Local>> local_decls;
+  std::unique_ptr<Block> block;
 
 public:
-  Fun(std::string fun_name,
-      std::string return_type,
+  Body(std::vector<std::unique_ptr<Local>> local_decls,
+       std::unique_ptr<Block> block);
+};
+
+// Two types of functions: procedures and functions
+// Procedures don't return a result
+class Fun : public Local {
+  std::string fun_name, return_type;
+  std::vector<std::unique_ptr<Formal>> formal_parameters;
+  std::unique_ptr<Body> body;
+  bool is_forward;
+
+public:
+  Fun(std::string fun_name, std::string return_type,
       std::vector<std::unique_ptr<Formal>> formal_parameters);
+
+  void set_body(std::unique_ptr<Body> body);
+  void set_forward(bool is_forward);
 
   Value *codegen() override;
 };
@@ -271,16 +321,13 @@ public:
   Value *codegen() override;
 };
 
-// Code block comprised of multiple instructions
-class Block : public Stmt {
-  std::vector<stmt_ptr> stmt_list;
-  std::vector<std::unique_ptr<VarDecl>> decl_list;
+// AST Root and initial program declaration
+class Program : public Stmt {
+  std::string name;
+  std::unique_ptr<Body> body;
 
 public:
-  Block(std::vector<stmt_ptr> stmt_list,
-        std::vector<std::unique_ptr<VarDecl>> decl_list);
-
-  Value *codegen() override;
+  Program(std::string name, std::unique_ptr<Body> body);
 };
 
 #endif

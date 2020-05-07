@@ -5,7 +5,7 @@
 #include "ast.hpp"
 #include "lexer.hpp"
 
-std::unique_ptr<Block> root;
+std::unique_ptr<Program> root;
 %}
 
 %define parse.error verbose
@@ -38,30 +38,30 @@ std::unique_ptr<Block> root;
 %%
 
 program:
-    PROGRAM IDENTIFIER SEMI_COLON body DOT { std::make_unique<Block>(); }
+    PROGRAM IDENTIFIER SEMI_COLON body DOT { $$ = root = std::make_unique<Program>($2, $4); }
 ;
 
 body:
-    next_local block
+    next_local block { $$ = std::make_unique<Body>($1, $2); }
 ;
 
 next_local:
-    next_local local
-|   /* empty */
+    next_local local { $$ = $1; $$.push_back($2);                  }
+|   /* empty */      { $$ = std::vector<std::unique_ptr<Local>>(); }
 ;
 
 local:
-    VAR next_id COLON type SEMI_COLON next_var { $$ = $6;
-                                                 $$.push_back(std::make_unique<VarDecl>($2, $4)); }
-|   LABEL next_id SEMI_COLON
-|   header SEMI_COLON body SEMI_COLON
-|   FORWARD header SEMI_COLON
+    VAR next_id COLON type SEMI_COLON next_var { auto var_names = $6;
+                                                 var_names.push_back(std::make_unique<VarNames>($2, $4));
+                                                 $$ = std::make_unique<VarDecl>(var_names);       }
+|   LABEL next_id SEMI_COLON                   { $$ = std::make_unique<LabelDecl>($2);            }
+|   header SEMI_COLON body SEMI_COLON          { $$ = $1; $$.set_body($3); $$.set_forward(false); }
+|   FORWARD header SEMI_COLON                  { $$ = $2; $$.set_forward(true);                   }
 ;
 
 next_var:
-    next_var next_id COLON type SEMI_COLON { $$ = $1;
-                                             $$.push_back(std::make_unique<VarDecl>($2, $4);  }
-|   /* empty */                            { $$ = std::vector<std::unique_ptr<VarDecl>>();    }
+    next_var next_id COLON type SEMI_COLON { $$ = $1; $$.push_back(std::make_unique<VarNames>($2, $4); }
+|   /* empty */                            { $$ = std::vector<std::unique_ptr<VarNames>>();            }
 ;
 
 next_id:
@@ -95,12 +95,12 @@ optional_var:
 ;
 
 type:
-    INTEGER {}
-|   REAL {}
-|   BOOLEAN {}
-|   CHAR {}
-|   ARRAY optional_size OF type {}
-|   CARET type {}
+    INTEGER { $$ = "integer"; }
+|   REAL    { $$ = "real";    }
+|   BOOLEAN { $$ = "boolean";  }
+|   CHAR    { $$ = "char"; }
+|   ARRAY optional_size OF type { $$ = "array of" + type; }
+|   CARET type { $$ = "caret"; }
 ;
 
 optional_size:
