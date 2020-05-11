@@ -17,6 +17,7 @@ static std::map<std::string, Value *> NamedValues;
 //------------------------------------------------------------------//
 //---------------------------Constructors---------------------------//
 //------------------------------------------------------------------//
+
 Boolean::Boolean(bool val) : val(val) {}
 
 Char::Char(char val) : val(val) {}
@@ -32,54 +33,68 @@ Nil::Nil() {}
 Variable::Variable(std::string name, bool get_addr, int offset)
     : name(name), get_addr(get_addr), offset(offset) {}
 
-BinaryExpr::BinaryExpr(std::string op, expr_ptr left, expr_ptr right)
+BinaryExpr::BinaryExpr(std::string op, std::unique_ptr<Expr> left,
+                       std::unique_ptr<Expr> right)
     : op(op), left(std::move(left)), right(std::move(right)) {}
 
-UnaryOp::UnaryOp(std::string op, expr_ptr operand)
+UnaryOp::UnaryOp(std::string op, std::unique_ptr<Expr> operand)
     : op(op), operand(std::move(operand)) {}
 
-VarDecl::VarDecl(std::vector<std::string> names, std::string type)
+Block::Block(std::vector<std::unique_ptr<Stmt>> stmt_list)
+    : stmt_list(std::move(stmt_list)) {}
+
+VarNames::VarNames(std::vector<std::string> names, std::string type)
     : names(names), type(type) {}
 
-VarAssign::VarAssign(expr_ptr left, expr_ptr right)
+VarDecl::VarDecl(std::vector<std::unique_ptr<VarNames>> var_names)
+    : var_names(std::move(var_names)) {}
+
+LabelDecl::LabelDecl(std::vector<std::string> names) : names(names) {}
+
+VarAssign::VarAssign(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right)
     : left(std::move(left)), right(std::move(right)) {}
 
 Goto::Goto(std::string label) : label(label) {}
 
-Label::Label(std::string label, stmt_ptr statement)
+Label::Label(std::string label, std::unique_ptr<Stmt> statement)
     : label(label), statement(std::move(statement)) {}
 
-If::If(expr_ptr cond, stmt_ptr if_statement, stmt_ptr else_statement)
+If::If(std::unique_ptr<Expr> cond, std::unique_ptr<Stmt> if_statement,
+       std::unique_ptr<Stmt> else_statement)
     : cond(std::move(cond)), if_statement(std::move(if_statement)),
       else_statement(std::move(else_statement)) {}
 
-While::While(expr_ptr cond, stmt_ptr statement)
+While::While(std::unique_ptr<Expr> cond, std::unique_ptr<Stmt> statement)
     : cond(std::move(cond)), statement(std::move(statement)) {}
 
 Formal::Formal(bool pass_by_reference, std::vector<std::string> names,
                std::string type)
     : pass_by_reference(pass_by_reference), names(names), type(type) {}
 
-Fun::Fun(std::string fun_name,
-         std::string return_type,
+Body::Body(std::vector<std::unique_ptr<Local>> local_decls,
+           std::unique_ptr<Block> block)
+    : local_decls(std::move(local_decls)), block(std::move(block)) {}
+
+Fun::Fun(std::string fun_name, std::string return_type,
          std::vector<std::unique_ptr<Formal>> formal_parameters)
     : fun_name(fun_name), return_type(return_type),
       formal_parameters(std::move(formal_parameters)) {}
 
-Call::Call(std::string fun_name, std::vector<expr_ptr> parameters)
+Call::Call(std::string fun_name, std::vector<std::unique_ptr<Expr>> parameters)
     : fun_name(fun_name), parameters(std::move(parameters)) {}
 
 Return::Return() {}
 
-New::New(int size, expr_ptr l_value)
+Result::Result() {}
+
+New::New(int size, std::unique_ptr<Expr> l_value)
     : size(size), l_value(std::move(l_value)) {}
 
-Dispose::Dispose(bool has_brackets, expr_ptr l_value)
+Dispose::Dispose(bool has_brackets, std::unique_ptr<Expr> l_value)
     : has_brackets(has_brackets), l_value(std::move(l_value)) {}
 
-Block::Block(std::vector<stmt_ptr> stmt_list,
-             std::vector<std::unique_ptr<VarDecl>> decl_list)
-    : stmt_list(std::move(stmt_list)), decl_list(std::move(decl_list)) {}
+Program::Program(std::string name, std::unique_ptr<Body> body)
+    : name(name), body(std::move(body)) {}
 
 //------------------------------------------------------------------//
 //-----------------------------Codegen------------------------------//

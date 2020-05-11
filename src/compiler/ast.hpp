@@ -18,9 +18,6 @@ public:
 class Expr : public Node {};
 class Stmt : public Node {};
 
-typedef std::unique_ptr<Expr> expr_ptr;
-typedef std::unique_ptr<Stmt> stmt_ptr;
-
 //------------------------------------------------------------//
 //--------------------Constant expressions--------------------//
 //------------------------------------------------------------//
@@ -117,10 +114,11 @@ public:
 // Binary expression using arithmetic, comparison or logical operators
 class BinaryExpr : public Expr {
   std::string op;
-  expr_ptr left, right;
+  std::unique_ptr<Expr> left, right;
 
 public:
-  BinaryExpr(std::string op, expr_ptr left, expr_ptr right);
+  BinaryExpr(std::string op, std::unique_ptr<Expr> left,
+             std::unique_ptr<Expr> right);
 
   Value *codegen() override;
 };
@@ -128,10 +126,10 @@ public:
 // Unary operator one of: not, +, -
 class UnaryOp : public Expr {
   std::string op;
-  expr_ptr operand;
+  std::unique_ptr<Expr> operand;
 
 public:
-  UnaryOp(std::string op, expr_ptr operand);
+  UnaryOp(std::string op, std::unique_ptr<Expr> operand);
 
   Value *codegen() override;
 };
@@ -145,10 +143,10 @@ class Local : public Stmt {};
 
 // Code block comprised of multiple instructions
 class Block : public Stmt {
-  std::vector<stmt_ptr> stmt_list;
+  std::vector<std::unique_ptr<Stmt>> stmt_list;
 
 public:
-  Block(std::vector<stmt_ptr> stmt_list);
+  Block(std::vector<std::unique_ptr<Stmt>> stmt_list);
 
   Value *codegen() override;
 };
@@ -186,10 +184,10 @@ public:
 
 // Variable assignment statement
 class VarAssign : public Stmt {
-  expr_ptr left, right;
+  std::unique_ptr<Expr> left, right;
 
 public:
-  VarAssign(expr_ptr left, expr_ptr right);
+  VarAssign(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right);
 
   Value *codegen() override;
 };
@@ -207,32 +205,33 @@ public:
 // Label before a statement where we can goto
 class Label : public Stmt {
   std::string label;
-  stmt_ptr statement;
+  std::unique_ptr<Stmt> statement;
 
 public:
-  Label(std::string label, stmt_ptr statement);
+  Label(std::string label, std::unique_ptr<Stmt> statement);
 
   Value *codegen() override;
 };
 
 // If statement with an optional else clause
 class If : public Stmt {
-  expr_ptr cond;
-  stmt_ptr if_statement, else_statement;
+  std::unique_ptr<Expr> cond;
+  std::unique_ptr<Stmt> if_statement, else_statement;
 
 public:
-  If(expr_ptr cond, stmt_ptr if_statement, stmt_ptr else_statement);
+  If(std::unique_ptr<Expr> cond, std::unique_ptr<Stmt> if_statement,
+     std::unique_ptr<Stmt> else_statement);
 
   Value *codegen() override;
 };
 
 // While loop
 class While : public Stmt {
-  expr_ptr cond;
-  stmt_ptr statement;
+  std::unique_ptr<Expr> cond;
+  std::unique_ptr<Stmt> statement;
 
 public:
-  While(expr_ptr cond, stmt_ptr statement);
+  While(std::unique_ptr<Expr> cond, std::unique_ptr<Stmt> statement);
 
   Value *codegen() override;
 };
@@ -283,10 +282,10 @@ public:
 // Function call
 class Call : public Stmt {
   std::string fun_name;
-  std::vector<expr_ptr> parameters;
+  std::vector<std::unique_ptr<Expr>> parameters;
 
 public:
-  Call(std::string fun_name, std::vector<expr_ptr> parameters);
+  Call(std::string fun_name, std::vector<std::unique_ptr<Expr>> parameters);
 
   Value *codegen() override;
 };
@@ -299,13 +298,21 @@ public:
   Value *codegen() override;
 };
 
+// Result variable for functions
+class Result : public Stmt {
+public:
+  Result();
+
+  Value *codegen() override;
+};
+
 // Dynamic memory allocation
 class New : public Stmt {
   int size;
-  expr_ptr l_value;
+  std::unique_ptr<Expr> l_value;
 
 public:
-  New(int size, expr_ptr l_value);
+  New(int size, std::unique_ptr<Expr> l_value);
 
   Value *codegen() override;
 };
@@ -313,10 +320,10 @@ public:
 // Deallocation of dynamically allocated memory
 class Dispose : public Stmt {
   bool has_brackets;
-  expr_ptr l_value;
+  std::unique_ptr<Expr> l_value;
 
 public:
-  Dispose(bool has_brackets, expr_ptr l_value);
+  Dispose(bool has_brackets, std::unique_ptr<Expr> l_value);
 
   Value *codegen() override;
 };
