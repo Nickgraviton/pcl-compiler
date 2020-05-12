@@ -6,9 +6,13 @@
 %{
 #include <iostream>
 #include <sstream>
+
+#include "ast.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
 int line_num = 1;
+
+#define YY_DECL yy::parser::symbol_type yylex()
 %}
 
 ALPHA            [a-zA-Z]
@@ -22,66 +26,66 @@ SINGLE_CHARACTER {PRINTABLE}|{ESCAPE_SEQ}
 %%
 
 
-"and"       return AND;
-"array"     return ARRAY;
-"begin"     return BEGIN_ST;
-"boolean"   return BOOLEAN;
-"char"      return CHAR;
-"dispose"   return DISPOSE;
-"div"       return INT_DIV;
-"do"        return DO;
-"else"      return ELSE;
-"end"       return END;
-"false"     return FALSE;
-"forward"   return FORWARD;
-"function"  return FUNCTION;
-"goto"      return GOTO;
-"if"        return IF;
-"integer"   return INTEGER;
-"label"     return LABEL;
-"mod"       return MOD;
-"new"       return NEW;
-"nil"       return NIL;
-"not"       return NOT;
-"of"        return OF;
-"or"        return OR;
-"procedure" return PROCEDURE;
-"program"   return PROGRAM;
-"real"      return REAL;
-"result"    return RESULT;
-"return"    return RETURN;
-"then"      return THEN;
-"true"      return TRUE;
-"var"       return VAR;
-"while"     return WHILE;
+"and"       return yy::parser::make_AND();
+"array"     return yy::parser::make_ARRAY();
+"begin"     return yy::parser::make_BEGIN_ST();
+"boolean"   return yy::parser::make_BOOLEAN();
+"char"      return yy::parser::make_CHAR();
+"dispose"   return yy::parser::make_DISPOSE();
+"div"       return yy::parser::make_INT_DIV();
+"do"        return yy::parser::make_DO();
+"else"      return yy::parser::make_ELSE();
+"end"       return yy::parser::make_END_ST();
+"false"     return yy::parser::make_FALSE();
+"forward"   return yy::parser::make_FORWARD();
+"function"  return yy::parser::make_FUNCTION();
+"goto"      return yy::parser::make_GOTO();
+"if"        return yy::parser::make_IF();
+"integer"   return yy::parser::make_INTEGER();
+"label"     return yy::parser::make_LABEL();
+"mod"       return yy::parser::make_MOD();
+"new"       return yy::parser::make_NEW();
+"nil"       return yy::parser::make_NIL();
+"not"       return yy::parser::make_NOT();
+"of"        return yy::parser::make_OF();
+"or"        return yy::parser::make_OR();
+"procedure" return yy::parser::make_PROCEDURE();
+"program"   return yy::parser::make_PROGRAM();
+"real"      return yy::parser::make_REAL();
+"result"    return yy::parser::make_RESULT();
+"return"    return yy::parser::make_RETURN();
+"then"      return yy::parser::make_THEN();
+"true"      return yy::parser::make_TRUE();
+"var"       return yy::parser::make_VAR();
+"while"     return yy::parser::make_WHILE();
 
-"="         return EQUAL;
-">"         return GT;
-"<"         return LT;
-"<>"        return NOT_EQUAL;
-">="        return GE;
-"<="        return LE;
-"+"         return PLUS;
-"-"         return MINUS;
-"*"         return MUL;
-"/"         return DIV;
-"^"         return CARET;
-"@"         return AT;
-":="        return ASSIGN;
-";"         return SEMI_COLON;
-"."         return DOT;
-"("         return OP_PAR;
-")"         return CLOS_PAR;
-":"         return COLON;
-","         return COMMA;
-"["         return OP_BRACK;
-"]"         return CLOS_BRACK;
+"="         return yy::parser::make_EQUAL();
+">"         return yy::parser::make_GT();
+"<"         return yy::parser::make_LT();
+"<>"        return yy::parser::make_NOT_EQUAL();
+">="        return yy::parser::make_GE();
+"<="        return yy::parser::make_LE();
+"+"         return yy::parser::make_PLUS();
+"-"         return yy::parser::make_MINUS();
+"*"         return yy::parser::make_MUL();
+"/"         return yy::parser::make_DIV();
+"^"         return yy::parser::make_CARET();
+"@"         return yy::parser::make_AT();
+":="        return yy::parser::make_ASSIGN();
+";"         return yy::parser::make_SEMI_COLON();
+"."         return yy::parser::make_DOT();
+"("         return yy::parser::make_OP_PAR();
+")"         return yy::parser::make_CLOS_PAR();
+":"         return yy::parser::make_COLON();
+","         return yy::parser::make_COMMA();
+"["         return yy::parser::make_OP_BRACK();
+"]"         return yy::parser::make_CLOS_BRACK();
 
-{ALPHA}({ALPHA}|{DIGIT}|_)*   return IDENTIFIER;
-{DIGIT}+                      return INT_CONST;
-{DIGIT}+\.{DIGIT}+{EXPONENT}? return REAL_CONST;
-\'{SINGLE_CHARACTER}?\'       return CHAR_CONST;
-\"{SINGLE_CHARACTER}*\"       return STRING_LITERAL;
+{ALPHA}({ALPHA}|{DIGIT}|_)*   return yy::parser::make_ID(std::string(yytext));
+{DIGIT}+                      return yy::parser::make_INT_CONST(atoi(yytext));
+{DIGIT}+\.{DIGIT}+{EXPONENT}? return yy::parser::make_REAL_CONST(atof(yytext));
+\'{SINGLE_CHARACTER}?\'       return yy::parser::make_CHAR_CONST(yytext[0]);
+\"{SINGLE_CHARACTER}*\"       return yy::parser::make_STRING_LITERAL(std::string(yytext));
 
 [ \t\r]          /* nothing */
 \n               ++line_num;
@@ -94,19 +98,13 @@ SINGLE_CHARACTER {PRINTABLE}|{ESCAPE_SEQ}
 <COMMENT><<EOF>> { std::stringstream ss;
                    ss  << "ERROR: Unexpected end of "
                        << "file within comment section";
-                   yyerror(ss.str());
+                   //yy::parser::error(ss.str());
                    exit(1); }
 
 .                { std::stringstream ss;
                    ss << "Illegal character with code " 
                       << (yytext[0] >= 32 ? yytext[0] : '?');
-                   yyerror(ss.str());
+                   //yy::parser::error(ss.str());
                    exit(1); }
 
 %%
-
-void yyerror(std::string msg) {
-    std::cerr << "Error: \"" << msg 
-              << "\" in line " << line_num
-              << '\n';
-}

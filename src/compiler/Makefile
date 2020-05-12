@@ -15,19 +15,13 @@ all: pcl
 pcl: lexer.o parser.o ast.o pcl.o
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
-pcl.o: pcl.cpp parser.hpp
+pcl.o: parser.cpp
 
-ast.o: ast.cpp
-
-lexer.cpp: lexer.l
+lexer.cpp: lexer.l parser.cpp
 	flex -s -t $< > $@
-
-lexer.o: lexer.cpp parser.hpp
 
 parser.hpp parser.cpp: parser.y
 	bison -dv -o parser.cpp $<
-
-parser.o: parser.cpp
 
 .PHONY: clean distclean
 

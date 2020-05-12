@@ -1,4 +1,5 @@
 #include <iostream>
+#include <memory>
 
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/LegacyPassManager.h>
@@ -18,88 +19,108 @@ static std::map<std::string, Value *> NamedValues;
 //---------------------------Constructors---------------------------//
 //------------------------------------------------------------------//
 
-Boolean::Boolean(bool val) : val(val) {}
+Boolean::Boolean(bool val)
+    : val(val) {}
 
-Char::Char(char val) : val(val) {}
+Char::Char(char val)
+    : val(val) {}
 
-Integer::Integer(int val) : val(val) {}
+Integer::Integer(int val)
+    : val(val) {}
 
-Real::Real(double val) : val(val) {}
+Real::Real(double val)
+    : val(val) {}
 
-String::String(std::string val) : val(val) {}
+String::String(std::string val)
+    : val(val) {}
 
 Nil::Nil() {}
 
-Variable::Variable(std::string name, bool get_addr, int offset)
-    : name(name), get_addr(get_addr), offset(offset) {}
+Variable::Variable(std::string name)
+    : name(name) {}
 
-BinaryExpr::BinaryExpr(std::string op, std::unique_ptr<Expr> left,
-                       std::unique_ptr<Expr> right)
+Array::Array(expr_ptr arr, expr_ptr offset)
+    : arr(std::move(arr)), offset(std::move(offset)) {}
+
+Deref::Deref(expr_ptr ptr)
+    : ptr(std::move(ptr)) {}
+
+AddressOf::AddressOf(expr_ptr var)
+    : var(std::move(var)) {}
+
+CallExpr::CallExpr(std::string fun_name, std::vector<expr_ptr> parameters)
+    : fun_name(fun_name), parameters(std::move(parameters)) {}
+
+Result::Result() {}
+
+BinaryExpr::BinaryExpr(std::string op, expr_ptr left, expr_ptr right)
     : op(op), left(std::move(left)), right(std::move(right)) {}
 
-UnaryOp::UnaryOp(std::string op, std::unique_ptr<Expr> operand)
+UnaryOp::UnaryOp(std::string op, expr_ptr operand)
     : op(op), operand(std::move(operand)) {}
 
-Block::Block(std::vector<std::unique_ptr<Stmt>> stmt_list)
+Block::Block(std::vector<stmt_ptr> stmt_list)
     : stmt_list(std::move(stmt_list)) {}
 
 VarNames::VarNames(std::vector<std::string> names, std::string type)
     : names(names), type(type) {}
 
-VarDecl::VarDecl(std::vector<std::unique_ptr<VarNames>> var_names)
+VarDecl::VarDecl(std::vector<varnames_ptr> var_names)
     : var_names(std::move(var_names)) {}
 
-LabelDecl::LabelDecl(std::vector<std::string> names) : names(names) {}
+LabelDecl::LabelDecl(std::vector<std::string> names)
+    : names(names) {}
 
-VarAssign::VarAssign(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right)
+VarAssign::VarAssign(expr_ptr left, expr_ptr right)
     : left(std::move(left)), right(std::move(right)) {}
 
-Goto::Goto(std::string label) : label(label) {}
+Goto::Goto(std::string label)
+    : label(label) {}
 
-Label::Label(std::string label, std::unique_ptr<Stmt> statement)
-    : label(label), statement(std::move(statement)) {}
+Label::Label(std::string label, stmt_ptr stmt)
+    : label(label), stmt(std::move(stmt)) {}
 
-If::If(std::unique_ptr<Expr> cond, std::unique_ptr<Stmt> if_statement,
-       std::unique_ptr<Stmt> else_statement)
-    : cond(std::move(cond)), if_statement(std::move(if_statement)),
-      else_statement(std::move(else_statement)) {}
+If::If(expr_ptr cond, stmt_ptr if_stmt, stmt_ptr else_stmt)
+    : cond(std::move(cond)), if_stmt(std::move(if_stmt)), else_stmt(std::move(else_stmt)) {}
 
-While::While(std::unique_ptr<Expr> cond, std::unique_ptr<Stmt> statement)
-    : cond(std::move(cond)), statement(std::move(statement)) {}
+While::While(expr_ptr cond, stmt_ptr stmt)
+    : cond(std::move(cond)), stmt(std::move(stmt)) {}
 
-Formal::Formal(bool pass_by_reference, std::vector<std::string> names,
-               std::string type)
+Formal::Formal(bool pass_by_reference, std::vector<std::string> names, std::string type)
     : pass_by_reference(pass_by_reference), names(names), type(type) {}
 
-Body::Body(std::vector<std::unique_ptr<Local>> local_decls,
-           std::unique_ptr<Block> block)
+Body::Body(std::vector<local_ptr> local_decls, block_ptr block)
     : local_decls(std::move(local_decls)), block(std::move(block)) {}
 
-Fun::Fun(std::string fun_name, std::string return_type,
-         std::vector<std::unique_ptr<Formal>> formal_parameters)
-    : fun_name(fun_name), return_type(return_type),
-      formal_parameters(std::move(formal_parameters)) {}
+Fun::Fun(std::string fun_name, std::string return_type, std::vector<formal_ptr> formal_parameters)
+    : fun_name(fun_name), return_type(return_type), formal_parameters(std::move(formal_parameters)) {}
 
-Call::Call(std::string fun_name, std::vector<std::unique_ptr<Expr>> parameters)
+void Fun::set_body(body_ptr body) {
+  this->body = std::move(body);
+}
+
+void Fun::set_forward(bool is_forward) {
+  this->is_forward = is_forward;
+}
+
+CallStmt::CallStmt(std::string fun_name, std::vector<expr_ptr> parameters)
     : fun_name(fun_name), parameters(std::move(parameters)) {}
 
 Return::Return() {}
 
-Result::Result() {}
+New::New(expr_ptr size, expr_ptr l_value)
+    : size(std::move(size)), l_value(std::move(l_value)) {}
 
-New::New(int size, std::unique_ptr<Expr> l_value)
-    : size(size), l_value(std::move(l_value)) {}
-
-Dispose::Dispose(bool has_brackets, std::unique_ptr<Expr> l_value)
+Dispose::Dispose(bool has_brackets, expr_ptr l_value)
     : has_brackets(has_brackets), l_value(std::move(l_value)) {}
 
-Program::Program(std::string name, std::unique_ptr<Body> body)
+Program::Program(std::string name, body_ptr body)
     : name(name), body(std::move(body)) {}
 
 //------------------------------------------------------------------//
 //-----------------------------Codegen------------------------------//
 //------------------------------------------------------------------//
-/*
+
 Value *Boolean::codegen() {
   return ConstantInt::get(TheContext, APInt(8, val, true));
 }
@@ -112,60 +133,60 @@ Value *Integer::codegen() {
   return ConstantInt::get(TheContext, APInt(16, val, true));
 }
 
-Value *Real::codegen() { return ConstantFP::get(TheContext, APFloat(val)); }
+Value *Real::codegen() {
+  return ConstantFP::get(TheContext, APFloat(val));
+}
 
-Value *Array_n::codegen() {}
+Value *String::codegen() {}
+
+Value *Nil::codegen() {}
+
+Value *Variable::codegen() {}
 
 Value *Array::codegen() {}
 
-Value *Pointer::codegen() {}
+Value *Deref::codegen() {}
 
-Value *Id::codegen() {}
+Value *AddressOf::codegen() {}
 
-Value *BinaryExpr::codegen() {
-  Value *l = left->codegen();
-  Value *r = right->codegen();
-  if (!l || !r)
-    return nullptr;
-  // Add instruction for integers and fadd for floats
-  switch (op) {
-  case "+":
-    return;
-  case "-":
-    return;
-  case "*":
-    return;
-  case "/":
-    return;
-  case "div":
-    return;
-  case "mod":
-    return;
-  case "or":
-    return;
-  case "and":
-    return;
-  case "=":
-    return;
-  case "<>":
-    return;
-  case "<":
-    return;
-  case "<=":
-    return;
-  case ">":
-    return;
-    case ">=";
-        return;
-    }
-    return nullptr;
-}
+Value *CallExpr::codegen() {}
 
-Value *If::codegen() {
-}
+Value *Result::codegen() {}
 
-Value *Block::codegen() {
-}
+Value *BinaryExpr::codegen() {}
 
-Value *Fun::codegen() {
-}*/
+Value *UnaryOp::codegen() {}
+
+Value *Block::codegen() {}
+
+Value *VarNames::codegen() {}
+
+Value *VarDecl::codegen() {}
+
+Value *LabelDecl::codegen() {}
+
+Value *VarAssign::codegen() {}
+
+Value *Goto::codegen() {}
+
+Value *Label::codegen() {}
+
+Value *If::codegen() {}
+
+Value *While::codegen() {}
+
+Value *Formal::codegen() {}
+
+Value *Body::codegen() {}
+
+Value *Fun::codegen() {}
+
+Value *CallStmt::codegen() {}
+
+Value *Return::codegen() {}
+
+Value *New::codegen() {}
+
+Value *Dispose::codegen() {}
+
+Value *Program::codegen() {}
