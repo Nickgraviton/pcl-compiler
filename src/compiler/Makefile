@@ -12,7 +12,7 @@ RM=rm -f
 
 all: pcl
 
-pcl: lexer.o parser.o ast.o pcl.o
+pcl: lexer.o parser.o ast.o types.o pcl.o 
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
 pcl.o: parser.cpp

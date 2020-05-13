@@ -5,14 +5,12 @@
 
 #include <llvm/IR/Value.h>
 
-using namespace llvm;
-
-extern int line_num;
+#include "types.hpp"
 
 class Node {
 public:
   virtual ~Node() = default;
-  virtual Value *codegen() = 0;
+  virtual llvm::Value *codegen() = 0;
 };
 
 class Expr : public Node {};
@@ -34,7 +32,7 @@ class Boolean : public Expr {
 public:
   Boolean(bool val);
 
-  Value *codegen() override;
+  llvm::Value *codegen() override;
 };
 
 // Name: char
@@ -46,7 +44,7 @@ class Char : public Expr {
 public:
   Char(char val);
 
-  Value *codegen() override;
+  llvm::Value *codegen() override;
 };
 
 // Name: integer
@@ -58,7 +56,7 @@ class Integer : public Expr {
 public:
   Integer(int val);
 
-  Value *codegen() override;
+  llvm::Value *codegen() override;
 };
 
 // Name: real
@@ -70,7 +68,7 @@ class Real : public Expr {
 public:
   Real(double val);
 
-  Value *codegen() override;
+  llvm::Value *codegen() override;
 };
 
 // Type: array[n] of char
@@ -81,7 +79,7 @@ class String : public Expr {
 public:
   String(std::string val);
 
-  Value *codegen() override;
+  llvm::Value *codegen() override;
 };
 
 // Name: nil
@@ -91,7 +89,7 @@ class Nil : public Expr {
 public:
   Nil();
 
-  Value *codegen() override;
+  llvm::Value *codegen() override;
 };
 
 //------------------------------------------------------------//
@@ -105,7 +103,7 @@ class Variable : public Expr {
 public:
   Variable(std::string name);
 
-  Value *codegen() override;
+  llvm::Value *codegen() override;
 };
 
 // Array expression
@@ -115,7 +113,7 @@ class Array : public Expr {
 public:
   Array(expr_ptr arr, expr_ptr offset);
 
-  Value *codegen() override;
+  llvm::Value *codegen() override;
 };
 
 // Dereference expression
@@ -125,7 +123,7 @@ class Deref : public Expr {
 public:
   Deref(expr_ptr ptr);
 
-  Value *codegen() override;
+  llvm::Value *codegen() override;
 };
 
 // Address of variable expression
@@ -135,7 +133,7 @@ class AddressOf : public Expr {
 public:
   AddressOf(expr_ptr var);
 
-  Value *codegen() override;
+  llvm::Value *codegen() override;
 };
 
 // Expr version of a call
@@ -146,7 +144,7 @@ class CallExpr : public Expr {
 public:
   CallExpr(std::string fun_name, std::vector<expr_ptr> parameters);
 
-  Value *codegen() override;
+  llvm::Value *codegen() override;
 };
 
 // Result variable for functions
@@ -154,7 +152,7 @@ class Result : public Expr {
 public:
   Result();
 
-  Value *codegen() override;
+  llvm::Value *codegen() override;
 };
 
 // Binary expression using arithmetic, comparison or logical operators
@@ -165,7 +163,7 @@ class BinaryExpr : public Expr {
 public:
   BinaryExpr(std::string op, expr_ptr left, expr_ptr right);
 
-  Value *codegen() override;
+  llvm::Value *codegen() override;
 };
 
 // Unary operator one of: not, +, -
@@ -176,7 +174,7 @@ class UnaryOp : public Expr {
 public:
   UnaryOp(std::string op, expr_ptr operand);
 
-  Value *codegen() override;
+  llvm::Value *codegen() override;
 };
 
 //------------------------------------------------------------//
@@ -187,6 +185,14 @@ public:
 class Local : public Stmt {};
 using local_ptr = std::unique_ptr<Local>;
 
+// Empty statement
+class Empty : public Stmt {
+public:
+  Empty();
+
+  llvm::Value *codegen() override;
+};
+
 // Code block comprised of multiple instructions
 class Block : public Stmt {
   std::vector<stmt_ptr> stmt_list;
@@ -194,19 +200,19 @@ class Block : public Stmt {
 public:
   Block(std::vector<stmt_ptr> stmt_list);
 
-  Value *codegen() override;
+  llvm::Value *codegen() override;
 };
 using block_ptr = std::unique_ptr<Block>;
 
 // Variable names of the same type
 class VarNames : public Stmt {
   std::vector<std::string> names;
-  std::string type;
+  typeinfo_ptr type;
 
 public:
-  VarNames(std::vector<std::string> names, std::string type);
+  VarNames(std::vector<std::string> names, typeinfo_ptr type);
 
-  Value *codegen() override;
+  llvm::Value *codegen() override;
 };
 using varnames_ptr = std::unique_ptr<VarNames>;
 
@@ -217,7 +223,7 @@ class VarDecl : public Local {
 public:
   VarDecl(std::vector<varnames_ptr> var_names);
 
-  Value *codegen() override;
+  llvm::Value *codegen() override;
 };
 
 // Label declaration
@@ -227,7 +233,7 @@ class LabelDecl : public Local {
 public:
   LabelDecl(std::vector<std::string> names);
 
-  Value *codegen() override;
+  llvm::Value *codegen() override;
 };
 
 // Variable assignment statement
@@ -237,7 +243,7 @@ class VarAssign : public Stmt {
 public:
   VarAssign(expr_ptr left, expr_ptr right);
 
-  Value *codegen() override;
+  llvm::Value *codegen() override;
 };
 
 // Goto statement that jumps to label in the same block
@@ -247,7 +253,7 @@ class Goto : public Stmt {
 public:
   Goto(std::string label);
 
-  Value *codegen() override;
+  llvm::Value *codegen() override;
 };
 
 // Label before a statement where we can goto
@@ -258,7 +264,7 @@ class Label : public Stmt {
 public:
   Label(std::string label, stmt_ptr stmt);
 
-  Value *codegen() override;
+  llvm::Value *codegen() override;
 };
 
 // If statement with an optional else clause
@@ -269,7 +275,7 @@ class If : public Stmt {
 public:
   If(expr_ptr cond, stmt_ptr if_stmt, stmt_ptr else_stmt);
 
-  Value *codegen() override;
+  llvm::Value *codegen() override;
 };
 
 // While loop
@@ -280,7 +286,7 @@ class While : public Stmt {
 public:
   While(expr_ptr cond, stmt_ptr stmt);
 
-  Value *codegen() override;
+  llvm::Value *codegen() override;
 };
 
 // Formal parameters for functions
@@ -289,12 +295,12 @@ public:
 class Formal : public Stmt {
   bool pass_by_reference;
   std::vector<std::string> names;
-  std::string type;
+  typeinfo_ptr type;
 
 public:
-  Formal(bool pass_by_reference, std::vector<std::string> names, std::string type);
+  Formal(bool pass_by_reference, std::vector<std::string> names, typeinfo_ptr type);
 
-  Value *codegen() override;
+  llvm::Value *codegen() override;
 };
 using formal_ptr = std::unique_ptr<Formal>;
 
@@ -306,25 +312,27 @@ class Body : public Stmt {
 public:
   Body(std::vector<local_ptr> local_decls, block_ptr block);
 
-  Value *codegen() override;
+  llvm::Value *codegen() override;
 };
 using body_ptr = std::unique_ptr<Body>;
 
 // Two types of functions: procedures and functions
 // Procedures don't return a result
 class Fun : public Local {
-  std::string fun_name, return_type;
+  std::string fun_name;
+  typeinfo_ptr return_type;
   std::vector<formal_ptr> formal_parameters;
+
   body_ptr body;
   bool is_forward;
 
 public:
-  Fun(std::string fun_name, std::string return_type, std::vector<formal_ptr> formal_parameters);
+  Fun(std::string fun_name, typeinfo_ptr return_type, std::vector<formal_ptr> formal_parameters);
 
   void set_body(body_ptr body);
   void set_forward(bool is_forward);
 
-  Value *codegen() override;
+  llvm::Value *codegen() override;
 };
 using fun_ptr = std::unique_ptr<Fun>;
 
@@ -336,7 +344,7 @@ class CallStmt : public Stmt {
 public:
   CallStmt(std::string fun_name, std::vector<expr_ptr> parameters);
 
-  Value *codegen() override;
+  llvm::Value *codegen() override;
 };
 
 // Return statement
@@ -344,7 +352,7 @@ class Return : public Stmt {
 public:
   Return();
 
-  Value *codegen() override;
+  llvm::Value *codegen() override;
 };
 
 // Dynamic memory allocation
@@ -354,7 +362,7 @@ class New : public Stmt {
 public:
   New(expr_ptr size, expr_ptr l_value);
 
-  Value *codegen() override;
+  llvm::Value *codegen() override;
 };
 
 // Deallocation of dynamically allocated memory
@@ -365,7 +373,7 @@ class Dispose : public Stmt {
 public:
   Dispose(bool has_brackets, expr_ptr l_value);
 
-  Value *codegen() override;
+  llvm::Value *codegen() override;
 };
 
 // AST Root and initial program declaration
@@ -376,7 +384,7 @@ class Program : public Stmt {
 public:
   Program(std::string name, body_ptr body);
 
-  Value *codegen() override;
+  llvm::Value *codegen() override;
 };
 using program_ptr = std::unique_ptr<Program>;
 

@@ -41,7 +41,7 @@ begin
   if limit >= 3 then
   begin
     counter := counter + 1;
-    writeString("3\n")
+    writeString("3\n");
   end;
   number := 6;
   while number <= limit do

@@ -10,9 +10,11 @@
 #include "ast.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
-int line_num = 1;
 
 #define YY_DECL yy::parser::symbol_type yylex()
+
+void lexer_error(const std::string& msg);
+int line_num = 1;
 %}
 
 ALPHA            [a-zA-Z]
@@ -96,15 +98,22 @@ SINGLE_CHARACTER {PRINTABLE}|{ESCAPE_SEQ}
 <COMMENT>"*"     /* nothing */
 <COMMENT>[^*]+   /* nothing */
 <COMMENT><<EOF>> { std::stringstream ss;
-                   ss  << "ERROR: Unexpected end of "
-                       << "file within comment section";
-                   //yy::parser::error(ss.str());
+                   ss << "Unexpected end of file within comment section";
+                   lexer_error(ss.str());
                    exit(1); }
 
 .                { std::stringstream ss;
                    ss << "Illegal character with code " 
                       << (yytext[0] >= 32 ? yytext[0] : '?');
-                   //yy::parser::error(ss.str());
+                   lexer_error(ss.str());
                    exit(1); }
 
 %%
+
+
+// Local lexer error function because parser's yyerror needs a parser object instance
+void lexer_error(const std::string& msg) {
+  std::cout << "Lexer error: "
+            << "\"" << msg << "\" "
+            << "in line " << line_num << "\n";
+}

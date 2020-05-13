@@ -7,6 +7,7 @@
 #include <llvm/IR/Value.h>
 
 #include "ast.hpp"
+#include "types.hpp"
 
 using namespace llvm;
 
@@ -59,11 +60,13 @@ BinaryExpr::BinaryExpr(std::string op, expr_ptr left, expr_ptr right)
 UnaryOp::UnaryOp(std::string op, expr_ptr operand)
     : op(op), operand(std::move(operand)) {}
 
+Empty::Empty() {}
+
 Block::Block(std::vector<stmt_ptr> stmt_list)
     : stmt_list(std::move(stmt_list)) {}
 
-VarNames::VarNames(std::vector<std::string> names, std::string type)
-    : names(names), type(type) {}
+VarNames::VarNames(std::vector<std::string> names, typeinfo_ptr type)
+    : names(names), type(std::move(type)) {}
 
 VarDecl::VarDecl(std::vector<varnames_ptr> var_names)
     : var_names(std::move(var_names)) {}
@@ -86,14 +89,14 @@ If::If(expr_ptr cond, stmt_ptr if_stmt, stmt_ptr else_stmt)
 While::While(expr_ptr cond, stmt_ptr stmt)
     : cond(std::move(cond)), stmt(std::move(stmt)) {}
 
-Formal::Formal(bool pass_by_reference, std::vector<std::string> names, std::string type)
-    : pass_by_reference(pass_by_reference), names(names), type(type) {}
+Formal::Formal(bool pass_by_reference, std::vector<std::string> names, typeinfo_ptr type)
+    : pass_by_reference(pass_by_reference), names(names), type(std::move(type)) {}
 
 Body::Body(std::vector<local_ptr> local_decls, block_ptr block)
     : local_decls(std::move(local_decls)), block(std::move(block)) {}
 
-Fun::Fun(std::string fun_name, std::string return_type, std::vector<formal_ptr> formal_parameters)
-    : fun_name(fun_name), return_type(return_type), formal_parameters(std::move(formal_parameters)) {}
+Fun::Fun(std::string fun_name, typeinfo_ptr return_type, std::vector<formal_ptr> formal_parameters)
+    : fun_name(fun_name), return_type(std::move(return_type)), formal_parameters(std::move(formal_parameters)) {}
 
 void Fun::set_body(body_ptr body) {
   this->body = std::move(body);
@@ -156,6 +159,8 @@ Value *Result::codegen() {}
 Value *BinaryExpr::codegen() {}
 
 Value *UnaryOp::codegen() {}
+
+Value *Empty::codegen() {}
 
 Value *Block::codegen() {}
 
