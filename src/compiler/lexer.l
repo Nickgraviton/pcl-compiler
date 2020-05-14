@@ -6,6 +6,7 @@
 %{
 #include <iostream>
 #include <sstream>
+#include <string>
 
 #include "ast.hpp"
 #include "lexer.hpp"
@@ -84,8 +85,8 @@ SINGLE_CHARACTER {PRINTABLE}|{ESCAPE_SEQ}
 "]"         return yy::parser::make_CLOS_BRACK();
 
 {ALPHA}({ALPHA}|{DIGIT}|_)*   return yy::parser::make_ID(std::string(yytext));
-{DIGIT}+                      return yy::parser::make_INT_CONST(atoi(yytext));
-{DIGIT}+\.{DIGIT}+{EXPONENT}? return yy::parser::make_REAL_CONST(atof(yytext));
+{DIGIT}+                      return yy::parser::make_INT_CONST(std::stoi(yytext));
+{DIGIT}+\.{DIGIT}+{EXPONENT}? return yy::parser::make_REAL_CONST(std::stod(yytext));
 \'{SINGLE_CHARACTER}?\'       return yy::parser::make_CHAR_CONST(yytext[0]);
 \"{SINGLE_CHARACTER}*\"       return yy::parser::make_STRING_LITERAL(std::string(yytext));
 
@@ -113,7 +114,5 @@ SINGLE_CHARACTER {PRINTABLE}|{ESCAPE_SEQ}
 
 // Local lexer error function because parser's yyerror needs a parser object instance
 void lexer_error(const std::string& msg) {
-  std::cout << "Lexer error: "
-            << "\"" << msg << "\" "
-            << "in line " << line_num << "\n";
+  std::cerr << "Lexer error: \"" << msg << "\" in line " << line_num << std::endl;
 }

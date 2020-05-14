@@ -221,5 +221,5 @@ unop:
 %%
 
 void yy::parser::error(const std::string& msg) {
-  std::cerr << "Error: \"" << msg << "\" in line " << line_num << "\n";
+  std::cerr << "Error: \"" << msg << "\" in line " << line_num << std::endl;
 }

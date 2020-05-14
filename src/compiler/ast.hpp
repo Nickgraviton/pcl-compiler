@@ -10,7 +10,8 @@
 class Node {
 public:
   virtual ~Node() = default;
-  virtual llvm::Value *codegen() = 0;
+  virtual void print(std::ostream& out, int level) const = 0;
+  virtual llvm::Value *codegen() const = 0;
 };
 
 class Expr : public Node {};
@@ -32,7 +33,8 @@ class Boolean : public Expr {
 public:
   Boolean(bool val);
 
-  llvm::Value *codegen() override;
+  void print(std::ostream& out, int level) const override;
+  llvm::Value *codegen() const override;
 };
 
 // Name: char
@@ -44,7 +46,8 @@ class Char : public Expr {
 public:
   Char(char val);
 
-  llvm::Value *codegen() override;
+  void print(std::ostream& out, int level) const override;
+  llvm::Value *codegen() const override;
 };
 
 // Name: integer
@@ -56,7 +59,8 @@ class Integer : public Expr {
 public:
   Integer(int val);
 
-  llvm::Value *codegen() override;
+  void print(std::ostream& out, int level) const override;
+  llvm::Value *codegen() const override;
 };
 
 // Name: real
@@ -68,7 +72,8 @@ class Real : public Expr {
 public:
   Real(double val);
 
-  llvm::Value *codegen() override;
+  void print(std::ostream& out, int level) const override;
+  llvm::Value *codegen() const override;
 };
 
 // Type: array[n] of char
@@ -79,7 +84,8 @@ class String : public Expr {
 public:
   String(std::string val);
 
-  llvm::Value *codegen() override;
+  void print(std::ostream& out, int level) const override;
+  llvm::Value *codegen() const override;
 };
 
 // Name: nil
@@ -89,7 +95,8 @@ class Nil : public Expr {
 public:
   Nil();
 
-  llvm::Value *codegen() override;
+  void print(std::ostream& out, int level) const override;
+  llvm::Value *codegen() const override;
 };
 
 //------------------------------------------------------------//
@@ -103,7 +110,8 @@ class Variable : public Expr {
 public:
   Variable(std::string name);
 
-  llvm::Value *codegen() override;
+  void print(std::ostream& out, int level) const override;
+  llvm::Value *codegen() const override;
 };
 
 // Array expression
@@ -113,7 +121,8 @@ class Array : public Expr {
 public:
   Array(expr_ptr arr, expr_ptr offset);
 
-  llvm::Value *codegen() override;
+  void print(std::ostream& out, int level) const override;
+  llvm::Value *codegen() const override;
 };
 
 // Dereference expression
@@ -123,7 +132,8 @@ class Deref : public Expr {
 public:
   Deref(expr_ptr ptr);
 
-  llvm::Value *codegen() override;
+  void print(std::ostream& out, int level) const override;
+  llvm::Value *codegen() const override;
 };
 
 // Address of variable expression
@@ -133,7 +143,8 @@ class AddressOf : public Expr {
 public:
   AddressOf(expr_ptr var);
 
-  llvm::Value *codegen() override;
+  void print(std::ostream& out, int level) const override;
+  llvm::Value *codegen() const override;
 };
 
 // Expr version of a call
@@ -144,7 +155,8 @@ class CallExpr : public Expr {
 public:
   CallExpr(std::string fun_name, std::vector<expr_ptr> parameters);
 
-  llvm::Value *codegen() override;
+  void print(std::ostream& out, int level) const override;
+  llvm::Value *codegen() const override;
 };
 
 // Result variable for functions
@@ -152,7 +164,8 @@ class Result : public Expr {
 public:
   Result();
 
-  llvm::Value *codegen() override;
+  void print(std::ostream& out, int level) const override;
+  llvm::Value *codegen() const override;
 };
 
 // Binary expression using arithmetic, comparison or logical operators
@@ -163,7 +176,8 @@ class BinaryExpr : public Expr {
 public:
   BinaryExpr(std::string op, expr_ptr left, expr_ptr right);
 
-  llvm::Value *codegen() override;
+  void print(std::ostream& out, int level) const override;
+  llvm::Value *codegen() const override;
 };
 
 // Unary operator one of: not, +, -
@@ -174,7 +188,8 @@ class UnaryOp : public Expr {
 public:
   UnaryOp(std::string op, expr_ptr operand);
 
-  llvm::Value *codegen() override;
+  void print(std::ostream& out, int level) const override;
+  llvm::Value *codegen() const override;
 };
 
 //------------------------------------------------------------//
@@ -190,7 +205,8 @@ class Empty : public Stmt {
 public:
   Empty();
 
-  llvm::Value *codegen() override;
+  void print(std::ostream& out, int level) const override;
+  llvm::Value *codegen() const override;
 };
 
 // Code block comprised of multiple instructions
@@ -200,7 +216,8 @@ class Block : public Stmt {
 public:
   Block(std::vector<stmt_ptr> stmt_list);
 
-  llvm::Value *codegen() override;
+  void print(std::ostream& out, int level) const override;
+  llvm::Value *codegen() const override;
 };
 using block_ptr = std::unique_ptr<Block>;
 
@@ -212,7 +229,8 @@ class VarNames : public Stmt {
 public:
   VarNames(std::vector<std::string> names, typeinfo_ptr type);
 
-  llvm::Value *codegen() override;
+  void print(std::ostream& out, int level) const override;
+  llvm::Value *codegen() const override;
 };
 using varnames_ptr = std::unique_ptr<VarNames>;
 
@@ -223,7 +241,8 @@ class VarDecl : public Local {
 public:
   VarDecl(std::vector<varnames_ptr> var_names);
 
-  llvm::Value *codegen() override;
+  void print(std::ostream& out, int level) const override;
+  llvm::Value *codegen() const override;
 };
 
 // Label declaration
@@ -233,7 +252,8 @@ class LabelDecl : public Local {
 public:
   LabelDecl(std::vector<std::string> names);
 
-  llvm::Value *codegen() override;
+  void print(std::ostream& out, int level) const override;
+  llvm::Value *codegen() const override;
 };
 
 // Variable assignment statement
@@ -243,7 +263,8 @@ class VarAssign : public Stmt {
 public:
   VarAssign(expr_ptr left, expr_ptr right);
 
-  llvm::Value *codegen() override;
+  void print(std::ostream& out, int level) const override;
+  llvm::Value *codegen() const override;
 };
 
 // Goto statement that jumps to label in the same block
@@ -253,7 +274,8 @@ class Goto : public Stmt {
 public:
   Goto(std::string label);
 
-  llvm::Value *codegen() override;
+  void print(std::ostream& out, int level) const override;
+  llvm::Value *codegen() const override;
 };
 
 // Label before a statement where we can goto
@@ -264,7 +286,8 @@ class Label : public Stmt {
 public:
   Label(std::string label, stmt_ptr stmt);
 
-  llvm::Value *codegen() override;
+  void print(std::ostream& out, int level) const override;
+  llvm::Value *codegen() const override;
 };
 
 // If statement with an optional else clause
@@ -275,7 +298,8 @@ class If : public Stmt {
 public:
   If(expr_ptr cond, stmt_ptr if_stmt, stmt_ptr else_stmt);
 
-  llvm::Value *codegen() override;
+  void print(std::ostream& out, int level) const override;
+  llvm::Value *codegen() const override;
 };
 
 // While loop
@@ -286,7 +310,8 @@ class While : public Stmt {
 public:
   While(expr_ptr cond, stmt_ptr stmt);
 
-  llvm::Value *codegen() override;
+  void print(std::ostream& out, int level) const override;
+  llvm::Value *codegen() const override;
 };
 
 // Formal parameters for functions
@@ -300,7 +325,8 @@ class Formal : public Stmt {
 public:
   Formal(bool pass_by_reference, std::vector<std::string> names, typeinfo_ptr type);
 
-  llvm::Value *codegen() override;
+  void print(std::ostream& out, int level) const override;
+  llvm::Value *codegen() const override;
 };
 using formal_ptr = std::unique_ptr<Formal>;
 
@@ -312,7 +338,8 @@ class Body : public Stmt {
 public:
   Body(std::vector<local_ptr> local_decls, block_ptr block);
 
-  llvm::Value *codegen() override;
+  void print(std::ostream& out, int level) const override;
+  llvm::Value *codegen() const override;
 };
 using body_ptr = std::unique_ptr<Body>;
 
@@ -332,7 +359,8 @@ public:
   void set_body(body_ptr body);
   void set_forward(bool is_forward);
 
-  llvm::Value *codegen() override;
+  void print(std::ostream& out, int level) const override;
+  llvm::Value *codegen() const override;
 };
 using fun_ptr = std::unique_ptr<Fun>;
 
@@ -344,7 +372,8 @@ class CallStmt : public Stmt {
 public:
   CallStmt(std::string fun_name, std::vector<expr_ptr> parameters);
 
-  llvm::Value *codegen() override;
+  void print(std::ostream& out, int level) const override;
+  llvm::Value *codegen() const override;
 };
 
 // Return statement
@@ -352,7 +381,8 @@ class Return : public Stmt {
 public:
   Return();
 
-  llvm::Value *codegen() override;
+  void print(std::ostream& out, int level) const override;
+  llvm::Value *codegen() const override;
 };
 
 // Dynamic memory allocation
@@ -362,7 +392,8 @@ class New : public Stmt {
 public:
   New(expr_ptr size, expr_ptr l_value);
 
-  llvm::Value *codegen() override;
+  void print(std::ostream& out, int level) const override;
+  llvm::Value *codegen() const override;
 };
 
 // Deallocation of dynamically allocated memory
@@ -373,7 +404,8 @@ class Dispose : public Stmt {
 public:
   Dispose(bool has_brackets, expr_ptr l_value);
 
-  llvm::Value *codegen() override;
+  void print(std::ostream& out, int level) const override;
+  llvm::Value *codegen() const override;
 };
 
 // AST Root and initial program declaration
@@ -384,7 +416,8 @@ class Program : public Stmt {
 public:
   Program(std::string name, body_ptr body);
 
-  llvm::Value *codegen() override;
+  void print(std::ostream& out, int level) const override;
+  llvm::Value *codegen() const override;
 };
 using program_ptr = std::unique_ptr<Program>;
 
