@@ -1,7 +1,9 @@
 #ifndef __AST_HPP__
 #define __AST_HPP__
 
+#include <iostream>
 #include <vector>
+#include <memory>
 
 #include <llvm/IR/Value.h>
 
@@ -224,10 +226,10 @@ using block_ptr = std::unique_ptr<Block>;
 // Variable names of the same type
 class VarNames : public Stmt {
   std::vector<std::string> names;
-  typeinfo_ptr type;
+  type_ptr type;
 
 public:
-  VarNames(std::vector<std::string> names, typeinfo_ptr type);
+  VarNames(std::vector<std::string> names, type_ptr type);
 
   void print(std::ostream& out, int level) const override;
   llvm::Value *codegen() const override;
@@ -320,10 +322,10 @@ public:
 class Formal : public Stmt {
   bool pass_by_reference;
   std::vector<std::string> names;
-  typeinfo_ptr type;
+  type_ptr type;
 
 public:
-  Formal(bool pass_by_reference, std::vector<std::string> names, typeinfo_ptr type);
+  Formal(bool pass_by_reference, std::vector<std::string> names, type_ptr type);
 
   void print(std::ostream& out, int level) const override;
   llvm::Value *codegen() const override;
@@ -347,14 +349,14 @@ using body_ptr = std::unique_ptr<Body>;
 // Procedures don't return a result
 class Fun : public Local {
   std::string fun_name;
-  typeinfo_ptr return_type;
+  type_ptr return_type;
   std::vector<formal_ptr> formal_parameters;
 
   body_ptr body;
   bool is_forward;
 
 public:
-  Fun(std::string fun_name, typeinfo_ptr return_type, std::vector<formal_ptr> formal_parameters);
+  Fun(std::string fun_name, type_ptr return_type, std::vector<formal_ptr> formal_parameters);
 
   void set_body(body_ptr body);
   void set_forward(bool is_forward);

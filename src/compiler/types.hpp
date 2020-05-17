@@ -1,7 +1,10 @@
 #ifndef __TYPES_HPP__
 #define __TYPES_HPP__
 
-enum class Type {
+#include <iostream>
+#include <memory>
+
+enum class BasicType {
   Integer,
   Real,
   Boolean,
@@ -12,70 +15,70 @@ enum class Type {
 
 // Both `array [n] of t` and `array of t` types need a complete type t
 // The only incomplete type is `array of t` without a specified size
-class TypeInfo {
-  Type t;
+class Type {
+  BasicType t;
   bool complete;
 
 public:
-  TypeInfo(Type t, bool complete);
-  virtual ~TypeInfo() = default;
+  Type(BasicType t, bool complete);
+  virtual ~Type() = default;
 
   virtual void print(std::ostream& out) const = 0;
 };
-using typeinfo_ptr = std::unique_ptr<TypeInfo>;
+using type_ptr = std::unique_ptr<Type>;
 
-class IntType : public TypeInfo {
+class IntType : public Type {
 public:
   IntType();
 
   void print(std::ostream& out) const override;
 };
 
-class RealType : public TypeInfo {
+class RealType : public Type {
 public:
   RealType();
 
   void print(std::ostream& out) const override;
 };
 
-class BoolType : public TypeInfo {
+class BoolType : public Type {
 public:
   BoolType();
 
   void print(std::ostream& out) const override;
 };
 
-class CharType : public TypeInfo {
+class CharType : public Type {
 public:
   CharType();
 
   void print(std::ostream& out) const override;
 };
 
-class ComplArrayType : public TypeInfo {
+class ArrayType : public Type {
   int size;
-  typeinfo_ptr subtype;
+  type_ptr subtype;
 
 public:
-  ComplArrayType(int size, typeinfo_ptr subtype);
+  ArrayType(int size, type_ptr subtype);
 
   void print(std::ostream& out) const override;
 };
 
-class IncomplArrayType : public TypeInfo {
-  typeinfo_ptr subtype;
+class IArrayType : public Type {
+  type_ptr subtype;
 
 public:
-  IncomplArrayType(typeinfo_ptr subtype);
+  IArrayType(type_ptr subtype);
 
   void print(std::ostream& out) const override;
 };
 
-class PointerType : public TypeInfo {
-  typeinfo_ptr subtype;
+class PointerType : public Type {
+  type_ptr subtype;
 
 public:
-  PointerType(typeinfo_ptr subtype);
+  PointerType(type_ptr subtype);
 
   void print(std::ostream& out) const override;
 };

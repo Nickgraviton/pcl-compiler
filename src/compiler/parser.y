@@ -51,7 +51,7 @@ extern yy::parser::symbol_type yylex();
 %type<local_ptr>    local
 %type<program_ptr>  program
 %type<stmt_ptr>     stmt
-%type<typeinfo_ptr> type
+%type<type_ptr>     type
 
 %type<std::vector<expr_ptr>>     next_parameter
 %type<std::vector<formal_ptr>>   next_arg
@@ -120,13 +120,13 @@ optional_var:
 ;
 
 type:
-  INTEGER                                     { $$ = std::make_unique<IntType>();                         }
-| REAL                                        { $$ = std::make_unique<RealType>();                        }
-| BOOLEAN                                     { $$ = std::make_unique<BoolType>();                        }
-| CHAR                                        { $$ = std::make_unique<CharType>();                        }
-| ARRAY OP_BRACK INT_CONST CLOS_BRACK OF type { $$ = std::make_unique<ComplArrayType>($3, std::move($6)); }
-| ARRAY OF type                               { $$ = std::make_unique<IncomplArrayType>(std::move($3));   }
-| CARET type                                  { $$ = std::make_unique<PointerType>(std::move($2));        }
+  INTEGER                                     { $$ = std::make_unique<IntType>();                    }
+| REAL                                        { $$ = std::make_unique<RealType>();                   }
+| BOOLEAN                                     { $$ = std::make_unique<BoolType>();                   }
+| CHAR                                        { $$ = std::make_unique<CharType>();                   }
+| ARRAY OP_BRACK INT_CONST CLOS_BRACK OF type { $$ = std::make_unique<ArrayType>($3, std::move($6)); }
+| ARRAY OF type                               { $$ = std::make_unique<IArrayType>(std::move($3));    }
+| CARET type                                  { $$ = std::make_unique<PointerType>(std::move($2));   }
 ;
 
 block:

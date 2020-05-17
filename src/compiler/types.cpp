@@ -7,29 +7,29 @@
 //---------------------------Constructors---------------------------//
 //------------------------------------------------------------------//
 
-TypeInfo::TypeInfo(Type t, bool complete)
+Type::Type(BasicType t, bool complete)
     : t(t), complete(complete) {}
 
 IntType::IntType()
-    : TypeInfo(Type::Integer, true) {}
+    : Type(BasicType::Integer, true) {}
 
 RealType::RealType()
-    : TypeInfo(Type::Real, true) {}
+    : Type(BasicType::Real, true) {}
 
 BoolType::BoolType()
-    : TypeInfo(Type::Boolean, true) {}
+    : Type(BasicType::Boolean, true) {}
 
 CharType::CharType()
-    : TypeInfo(Type::Char, true) {}
+    : Type(BasicType::Char, true) {}
 
-ComplArrayType::ComplArrayType(int size, typeinfo_ptr subtype)
-    : TypeInfo(Type::Array, true), size(size), subtype(std::move(subtype)) {}
+ArrayType::ArrayType(int size, type_ptr subtype)
+    : Type(BasicType::Array, true), size(size), subtype(std::move(subtype)) {}
 
-IncomplArrayType::IncomplArrayType(typeinfo_ptr subtype)
-    : TypeInfo(Type::Array, false), subtype(std::move(subtype)) {}
+IArrayType::IArrayType(type_ptr subtype)
+    : Type(BasicType::Array, false), subtype(std::move(subtype)) {}
 
-PointerType::PointerType(typeinfo_ptr subtype)
-    : TypeInfo(Type::Pointer, true), subtype(std::move(subtype)) {}
+PointerType::PointerType(type_ptr subtype)
+    : Type(BasicType::Pointer, true), subtype(std::move(subtype)) {}
 
 //------------------------------------------------------------------//
 //------------------------------Print-------------------------------//
@@ -51,12 +51,12 @@ void CharType::print(std::ostream& out) const {
   out << "Char";
 }
 
-void ComplArrayType::print(std::ostream& out) const {
+void ArrayType::print(std::ostream& out) const {
   out << "Array with size " << size << " of ";
   subtype->print(out);
 }
 
-void IncomplArrayType::print(std::ostream& out) const {
+void IArrayType::print(std::ostream& out) const {
   out << "Array of ";
   subtype->print(out);
 }
