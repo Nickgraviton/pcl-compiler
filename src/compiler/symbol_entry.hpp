@@ -1,14 +1,16 @@
 #ifndef __SYMBOL_ENTRY_HPP__
 #define __SYMBOL_ENTRY_HPP__
 
-#include "types.hpp"
+#include <memory>
+
+class Type;
 
 class SymbolEntry {
-  type_ptr t;
-  int offset;
+  std::shared_ptr<Type> t;
 
 public:
-  SymbolEntry(type_ptr t, int offset);
+  SymbolEntry();
+  SymbolEntry(std::shared_ptr<Type> t);
 };
 
 #endif

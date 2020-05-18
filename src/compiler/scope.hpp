@@ -3,22 +3,20 @@
 
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 
-#include "symbol_entry.hpp"
-#include "types.hpp"
+class SymbolEntry;
+class Type;
 
 class Scope {
   std::map<std::string, SymbolEntry> locals;
-  int offset;
-  int size;
 
 public:
-  Scope(int offset);
-  int get_offset() const;
+  Scope();
   int get_size() const;
-  SymbolEntry *lookup(std::string name);
-  void insert(std::string, type_ptr t);
+  void insert(std::string name, std::shared_ptr<Type> t);
+  std::optional<SymbolEntry> lookup(std::string name);
 };
 
 #endif

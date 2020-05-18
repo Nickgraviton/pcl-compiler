@@ -10,12 +10,25 @@
 #include "ast.hpp"
 #include "types.hpp"
 
+// Declaration before using the llvm namespace to avoid conflict
+using type_ptr = std::shared_ptr<Type>;
+
 using namespace llvm;
 
 static LLVMContext TheContext;
 static IRBuilder<> Builder(TheContext);
 static std::unique_ptr<Module> TheModule;
 static std::map<std::string, Value *> NamedValues;
+
+using expr_ptr = std::unique_ptr<Expr>;
+using stmt_ptr = std::unique_ptr<Stmt>;
+using local_ptr = std::unique_ptr<Local>;
+using block_ptr = std::unique_ptr<Block>;
+using varnames_ptr = std::unique_ptr<VarNames>;
+using formal_ptr = std::unique_ptr<Formal>;
+using body_ptr = std::unique_ptr<Body>;
+using fun_ptr = std::unique_ptr<Fun>;
+using program_ptr = std::unique_ptr<Program>;
 
 //------------------------------------------------------------------//
 //---------------------------Constructors---------------------------//
@@ -67,7 +80,7 @@ Block::Block(std::vector<stmt_ptr> stmt_list)
     : stmt_list(std::move(stmt_list)) {}
 
 VarNames::VarNames(std::vector<std::string> names, type_ptr type)
-    : names(names), type(std::move(type)) {}
+    : names(names), type(type) {}
 
 VarDecl::VarDecl(std::vector<varnames_ptr> var_names)
     : var_names(std::move(var_names)) {}
@@ -91,13 +104,13 @@ While::While(expr_ptr cond, stmt_ptr stmt)
     : cond(std::move(cond)), stmt(std::move(stmt)) {}
 
 Formal::Formal(bool pass_by_reference, std::vector<std::string> names, type_ptr type)
-    : pass_by_reference(pass_by_reference), names(names), type(std::move(type)) {}
+    : pass_by_reference(pass_by_reference), names(names), type(type) {}
 
 Body::Body(std::vector<local_ptr> local_decls, block_ptr block)
     : local_decls(std::move(local_decls)), block(std::move(block)) {}
 
 Fun::Fun(std::string fun_name, type_ptr return_type, std::vector<formal_ptr> formal_parameters)
-    : fun_name(fun_name), return_type(std::move(return_type)), formal_parameters(std::move(formal_parameters)) {}
+    : fun_name(fun_name), return_type(return_type), formal_parameters(std::move(formal_parameters)) {}
 
 void Fun::set_body(body_ptr body) {
   this->body = std::move(body);
@@ -348,74 +361,74 @@ void Program::print(std::ostream& out, int level) const {
 //-----------------------------Codegen------------------------------//
 //------------------------------------------------------------------//
 
-Value *Boolean::codegen() const {
+Value* Boolean::codegen() const {
   return ConstantInt::get(TheContext, APInt(8, val, true));
 }
 
-Value *Char::codegen() const {
+Value* Char::codegen() const {
   return ConstantInt::get(TheContext, APInt(8, val, true));
 }
 
-Value *Integer::codegen() const {
+Value* Integer::codegen() const {
   return ConstantInt::get(TheContext, APInt(16, val, true));
 }
 
-Value *Real::codegen() const {
+Value* Real::codegen() const {
   return ConstantFP::get(TheContext, APFloat(val));
 }
 
-Value *String::codegen() const {}
+Value* String::codegen() const {}
 
-Value *Nil::codegen() const {}
+Value* Nil::codegen() const {}
 
-Value *Variable::codegen() const {}
+Value* Variable::codegen() const {}
 
-Value *Array::codegen() const {}
+Value* Array::codegen() const {}
 
-Value *Deref::codegen() const {}
+Value* Deref::codegen() const {}
 
-Value *AddressOf::codegen() const {}
+Value* AddressOf::codegen() const {}
 
-Value *CallExpr::codegen() const {}
+Value* CallExpr::codegen() const {}
 
-Value *Result::codegen() const {}
+Value* Result::codegen() const {}
 
-Value *BinaryExpr::codegen() const {}
+Value* BinaryExpr::codegen() const {}
 
-Value *UnaryOp::codegen() const {}
+Value* UnaryOp::codegen() const {}
 
-Value *Empty::codegen() const {}
+Value* Empty::codegen() const {}
 
-Value *Block::codegen() const {}
+Value* Block::codegen() const {}
 
-Value *VarNames::codegen() const {}
+Value* VarNames::codegen() const {}
 
-Value *VarDecl::codegen() const {}
+Value* VarDecl::codegen() const {}
 
-Value *LabelDecl::codegen() const {}
+Value* LabelDecl::codegen() const {}
 
-Value *VarAssign::codegen() const {}
+Value* VarAssign::codegen() const {}
 
-Value *Goto::codegen() const {}
+Value* Goto::codegen() const {}
 
-Value *Label::codegen() const {}
+Value* Label::codegen() const {}
 
-Value *If::codegen() const {}
+Value* If::codegen() const {}
 
-Value *While::codegen() const {}
+Value* While::codegen() const {}
 
-Value *Formal::codegen() const {}
+Value* Formal::codegen() const {}
 
-Value *Body::codegen() const {}
+Value* Body::codegen() const {}
 
-Value *Fun::codegen() const {}
+Value* Fun::codegen() const {}
 
-Value *CallStmt::codegen() const {}
+Value* CallStmt::codegen() const {}
 
-Value *Return::codegen() const {}
+Value* Return::codegen() const {}
 
-Value *New::codegen() const {}
+Value* New::codegen() const {}
 
-Value *Dispose::codegen() const {}
+Value* Dispose::codegen() const {}
 
-Value *Program::codegen() const {}
+Value* Program::codegen() const {}

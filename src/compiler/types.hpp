@@ -25,7 +25,6 @@ public:
 
   virtual void print(std::ostream& out) const = 0;
 };
-using type_ptr = std::unique_ptr<Type>;
 
 class IntType : public Type {
 public:
@@ -57,28 +56,28 @@ public:
 
 class ArrayType : public Type {
   int size;
-  type_ptr subtype;
+  std::shared_ptr<Type> subtype;
 
 public:
-  ArrayType(int size, type_ptr subtype);
+  ArrayType(int size, std::shared_ptr<Type> subtype);
 
   void print(std::ostream& out) const override;
 };
 
 class IArrayType : public Type {
-  type_ptr subtype;
+  std::shared_ptr<Type> subtype;
 
 public:
-  IArrayType(type_ptr subtype);
+  IArrayType(std::shared_ptr<Type> subtype);
 
   void print(std::ostream& out) const override;
 };
 
 class PointerType : public Type {
-  type_ptr subtype;
+  std::shared_ptr<Type> subtype;
 
 public:
-  PointerType(type_ptr subtype);
+  PointerType(std::shared_ptr<Type> subtype);
 
   void print(std::ostream& out) const override;
 };

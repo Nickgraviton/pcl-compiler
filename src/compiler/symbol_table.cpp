@@ -1,17 +1,21 @@
+#include <memory>
+#include <string>
+#include <vector>
+
 #include "scope.hpp"
 #include "symbol_table.hpp"
+#include "symbol_entry.hpp"
 #include "types.hpp"
 
 void SymbolTable::open_scope() {
-  int offset = scopes.empty() ? 0 : scopes.back().get_offset();
-  scopes.push_back(Scope(offset));
+  scopes.push_back(Scope());
 }
 
 void SymbolTable::close_scope() {
   scopes.pop_back();
 }
 
-void SymbolTable::insert(std::string symbol, type_ptr t) {
+void SymbolTable::insert(std::string symbol, std::shared_ptr<Type> t) {
   scopes.back().insert(symbol, std::move(t));
 }
 

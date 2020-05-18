@@ -8,7 +8,7 @@
 #include "parser.hpp"
 #include "types.hpp"
 
-program_ptr root;
+std::unique_ptr<Program> root;
 extern yy::parser::symbol_type yylex();
 %}
 
@@ -43,22 +43,22 @@ extern yy::parser::symbol_type yylex();
 %left               MUL DIV INT_DIV MOD AND
 %nonassoc           NOT CARET UNOP R_VAL AT
 
-%type<block_ptr>    block
-%type<body_ptr>     body
-%type<expr_ptr>     optional_expr expr l_value r_value
-%type<formal_ptr>   formal
-%type<fun_ptr>      header
-%type<local_ptr>    local
-%type<program_ptr>  program
-%type<stmt_ptr>     stmt
-%type<type_ptr>     type
+%type<std::unique_ptr<Block>>   block
+%type<std::unique_ptr<Body>>    body
+%type<std::unique_ptr<Expr>>    optional_expr expr l_value r_value
+%type<std::unique_ptr<Formal>>  formal
+%type<std::unique_ptr<Fun>>     header
+%type<std::unique_ptr<Local>>   local
+%type<std::unique_ptr<Program>> program
+%type<std::unique_ptr<Stmt>>    stmt
+%type<std::shared_ptr<Type>>    type
 
-%type<std::vector<expr_ptr>>     next_parameter
-%type<std::vector<formal_ptr>>   next_arg
-%type<std::vector<local_ptr>>    next_local
-%type<std::vector<stmt_ptr>>     next_stmt
-%type<std::vector<varnames_ptr>> next_var
-%type<std::vector<std::string>>  next_id
+%type<std::vector<std::unique_ptr<Expr>>>     next_parameter
+%type<std::vector<std::unique_ptr<Formal>>>   next_arg
+%type<std::vector<std::unique_ptr<Local>>>    next_local
+%type<std::vector<std::unique_ptr<Stmt>>>     next_stmt
+%type<std::vector<std::unique_ptr<VarNames>>> next_var
+%type<std::vector<std::string>>               next_id
 
 %type<bool>        optional_var optional_bracket
 %type<std::string> unop
@@ -79,7 +79,7 @@ body:
 
 next_local:
   next_local local { $$ = std::move($1); $$.push_back(std::move($2)); }
-| /* empty */      { $$ = std::vector<local_ptr>();                   }
+| /* empty */      { $$ = std::vector<std::unique_ptr<Local>>();      }
 ;
 
 local:
@@ -90,8 +90,8 @@ local:
 ;
 
 next_var:
-  next_id COLON type SEMI_COLON          { $$ = std::vector<varnames_ptr>(); $$.push_back(std::make_unique<VarNames>($1, std::move($3))); }
-| next_var next_id COLON type SEMI_COLON { $$ = std::move($1); $$.push_back(std::make_unique<VarNames>($2, std::move($4)));               }
+  next_id COLON type SEMI_COLON          { $$ = std::vector<std::unique_ptr<VarNames>>(); $$.push_back(std::make_unique<VarNames>($1, $3)); }
+| next_var next_id COLON type SEMI_COLON { $$ = std::move($1); $$.push_back(std::make_unique<VarNames>($2, $4));                            }
 ;
 
 next_id:
@@ -100,18 +100,18 @@ next_id:
 ;
 
 header:
-  PROCEDURE ID OP_PAR next_arg CLOS_PAR           { $$ = std::make_unique<Fun>($2, nullptr, std::move($4));       }
-| FUNCTION ID OP_PAR next_arg CLOS_PAR COLON type { $$ = std::make_unique<Fun>($2, std::move($7), std::move($4)); }
+  PROCEDURE ID OP_PAR next_arg CLOS_PAR           { $$ = std::make_unique<Fun>($2, nullptr, std::move($4)); }
+| FUNCTION ID OP_PAR next_arg CLOS_PAR COLON type { $$ = std::make_unique<Fun>($2, $7, std::move($4));      }
 ;
 
 next_arg:
-  formal                     { $$ = std::vector<formal_ptr>(); $$.push_back(std::move($1)); }
-| next_arg SEMI_COLON formal { $$ = std::move($1); $$.push_back(std::move($3));             }
-| /* empty */                { $$ = std::vector<formal_ptr>();                              }
+  formal                     { $$ = std::vector<std::unique_ptr<Formal>>(); $$.push_back(std::move($1)); }
+| next_arg SEMI_COLON formal { $$ = std::move($1); $$.push_back(std::move($3));                          }
+| /* empty */                { $$ = std::vector<std::unique_ptr<Formal>>();                              }
 ;
 
 formal:
-  optional_var next_id COLON type { $$ = std::make_unique<Formal>($1, $2, std::move($4)); }
+  optional_var next_id COLON type { $$ = std::make_unique<Formal>($1, $2, $4); }
 ;
 
 optional_var:
@@ -120,13 +120,13 @@ optional_var:
 ;
 
 type:
-  INTEGER                                     { $$ = std::make_unique<IntType>();                    }
-| REAL                                        { $$ = std::make_unique<RealType>();                   }
-| BOOLEAN                                     { $$ = std::make_unique<BoolType>();                   }
-| CHAR                                        { $$ = std::make_unique<CharType>();                   }
-| ARRAY OP_BRACK INT_CONST CLOS_BRACK OF type { $$ = std::make_unique<ArrayType>($3, std::move($6)); }
-| ARRAY OF type                               { $$ = std::make_unique<IArrayType>(std::move($3));    }
-| CARET type                                  { $$ = std::make_unique<PointerType>(std::move($2));   }
+  INTEGER                                     { $$ = std::make_shared<IntType>();         }
+| REAL                                        { $$ = std::make_shared<RealType>();        }
+| BOOLEAN                                     { $$ = std::make_shared<BoolType>();        }
+| CHAR                                        { $$ = std::make_shared<CharType>();        }
+| ARRAY OP_BRACK INT_CONST CLOS_BRACK OF type { $$ = std::make_shared<ArrayType>($3, $6); }
+| ARRAY OF type                               { $$ = std::make_shared<IArrayType>($3);    }
+| CARET type                                  { $$ = std::make_shared<PointerType>($2);   }
 ;
 
 block:
@@ -134,8 +134,8 @@ block:
 ;
 
 next_stmt:
-  stmt                      { $$ = std::vector<stmt_ptr>(); $$.push_back(std::move($1)); }
-| next_stmt SEMI_COLON stmt { $$ = std::move($1); $$.push_back(std::move($3));           }
+  stmt                      { $$ = std::vector<std::unique_ptr<Stmt>>(); $$.push_back(std::move($1)); }
+| next_stmt SEMI_COLON stmt { $$ = std::move($1); $$.push_back(std::move($3));                        }
 ;
 
 stmt:
@@ -207,9 +207,9 @@ r_value:
 ;
 
 next_parameter:
-  expr                      { $$ = std::vector<expr_ptr>(); $$.push_back(std::move($1)); }
-| next_parameter COMMA expr { $$ = std::move($1); $$.push_back(std::move($3));           }
-| /* empty */               { $$ = std::vector<expr_ptr>();                              }
+  expr                      { $$ = std::vector<std::unique_ptr<Expr>>(); $$.push_back(std::move($1)); }
+| next_parameter COMMA expr { $$ = std::move($1); $$.push_back(std::move($3));                        }
+| /* empty */               { $$ = std::vector<std::unique_ptr<Expr>>();                              }
 ;
 
 unop:
