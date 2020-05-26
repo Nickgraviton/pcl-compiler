@@ -140,7 +140,9 @@ Program::Program(std::string name, body_ptr body)
 
 // Helper function that prints the current indent level number of spaces
 void print_level(std::ostream& out, int level) {
-  out << std::string(level, ' ');
+  while(level-- > 0)
+    out << "  |";
+  out << "--";
 }
 
 void Boolean::print(std::ostream& out, int level) const {
@@ -175,7 +177,7 @@ void Nil::print(std::ostream& out, int level) const {
 
 void Variable::print(std::ostream& out, int level) const {
   print_level(out, level);
-  out << "Variable(" << name << ")" << std::endl;
+  out << "Variable(name: " << name << ")" << std::endl;
 }
 
 void Array::print(std::ostream& out, int level) const {
@@ -199,7 +201,7 @@ void AddressOf::print(std::ostream& out, int level) const {
 
 void CallExpr::print(std::ostream& out, int level) const {
   print_level(out, level);
-  out << "CallExpr(" << fun_name << ", parameters):" << std::endl;
+  out << "CallExpr(fun_name: " << fun_name << ", parameters):" << std::endl;
   for (auto &p : parameters)
     p->print(out, level + 1);
 }
@@ -211,14 +213,14 @@ void Result::print(std::ostream& out, int level) const {
 
 void BinaryExpr::print(std::ostream& out, int level) const {
   print_level(out, level);
-  out << "BinaryExpr(" << op << ", left, right):" << std::endl;
+  out << "BinaryExpr(op: " << op << ", left, right):" << std::endl;
   left->print(out, level + 1);
   right->print(out, level + 1);
 }
 
 void UnaryOp::print(std::ostream& out, int level) const {
   print_level(out, level);
-  out << "UnaryOp(" << op << ", operand):" << std::endl;
+  out << "UnaryOp(op: " << op << ", operand):" << std::endl;
   operand->print(out, level + 1);
 }
 
@@ -236,7 +238,7 @@ void Block::print(std::ostream& out, int level) const {
 
 void VarNames::print(std::ostream& out, int level) const {
   print_level(out, level);
-  out << "VarNames(";
+  out << "VarNames(type: ";
   type->print(out);
   out << ", names):" << std::endl;
   for (auto &n : names) {
@@ -270,12 +272,12 @@ void VarAssign::print(std::ostream& out, int level) const {
 
 void Goto::print(std::ostream& out, int level) const {
   print_level(out, level);
-  out << "Goto(" << label << ")" << std::endl;
+  out << "Goto(label: " << label << ")" << std::endl;
 }
 
 void Label::print(std::ostream& out, int level) const {
   print_level(out, level);
-  out << "Label(" << label << ", stmt):" << std::endl;
+  out << "Label(label: " << label << ", stmt):" << std::endl;
   stmt->print(out, level + 1);
 }
 
@@ -297,7 +299,7 @@ void While::print(std::ostream& out, int level) const {
 
 void Formal::print(std::ostream& out, int level) const {
   print_level(out, level);
-  out << "Formal(pass_by_reference: " << pass_by_reference << ", names, ";
+  out << "Formal(pass_by_reference: " << pass_by_reference << ", names, type: ";
   type->print(out);
   out << "):" << std::endl;
   for (auto &n : names) {
@@ -316,9 +318,11 @@ void Body::print(std::ostream& out, int level) const {
 
 void Fun::print(std::ostream& out, int level) const {
   print_level(out, level);
-  out << "Fun(" << fun_name << ", ";
-  if (return_type)
+  out << "Fun(fun_name: " << fun_name << ", ";
+  if (return_type) {
+    out << "type: ";
     return_type->print(out);
+  }
   out << ", formal_parameters, body, is_forward: " << is_forward << "):" << std::endl;
   for (auto &f : formal_parameters)
     f->print(out, level + 1);
@@ -327,7 +331,7 @@ void Fun::print(std::ostream& out, int level) const {
 
 void CallStmt::print(std::ostream& out, int level) const {
   print_level(out, level);
-  out << "CallStmt(" << fun_name << ", parameters):" << std::endl;
+  out << "CallStmt(fun_name: " << fun_name << ", parameters):" << std::endl;
   for (auto &p : parameters)
     p->print(out, level + 1);
 }
@@ -353,9 +357,77 @@ void Dispose::print(std::ostream& out, int level) const {
 
 void Program::print(std::ostream& out, int level) const {
   print_level(out, level);
-  out << "Program(" << name << ", body):" << std::endl;
+  out << "Program(name: " << name << ", body):" << std::endl;
   body->print(out, level + 1);
 }
+
+//------------------------------------------------------------------//
+//----------------------------Semantic------------------------------//
+//------------------------------------------------------------------//
+
+void Boolean::semantic() const {}
+
+void Char::semantic() const {}
+
+void Integer::semantic() const {}
+
+void Real::semantic() const {}
+
+void String::semantic() const {}
+
+void Nil::semantic() const {}
+
+void Variable::semantic() const {}
+
+void Array::semantic() const {}
+
+void Deref::semantic() const {}
+
+void AddressOf::semantic() const {}
+
+void CallExpr::semantic() const {}
+
+void Result::semantic() const {}
+
+void BinaryExpr::semantic() const {}
+
+void UnaryOp::semantic() const {}
+
+void Empty::semantic() const {}
+
+void Block::semantic() const {}
+
+void VarNames::semantic() const {}
+
+void VarDecl::semantic() const {}
+
+void LabelDecl::semantic() const {}
+
+void VarAssign::semantic() const {}
+
+void Goto::semantic() const {}
+
+void Label::semantic() const {}
+
+void If::semantic() const {}
+
+void While::semantic() const {}
+
+void Formal::semantic() const {}
+
+void Body::semantic() const {}
+
+void Fun::semantic() const {}
+
+void CallStmt::semantic() const {}
+
+void Return::semantic() const {}
+
+void New::semantic() const {}
+
+void Dispose::semantic() const {}
+
+void Program::semantic() const {}
 
 //------------------------------------------------------------------//
 //-----------------------------Codegen------------------------------//

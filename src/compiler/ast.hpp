@@ -13,6 +13,7 @@ class Node {
 public:
   virtual ~Node() = default;
   virtual void print(std::ostream& out, int level) const = 0;
+  virtual void semantic() const = 0;
   virtual llvm::Value* codegen() const = 0;
 };
 
@@ -33,6 +34,7 @@ public:
   Boolean(bool val);
 
   void print(std::ostream& out, int level) const override;
+  void semantic() const override;
   llvm::Value* codegen() const override;
 };
 
@@ -46,6 +48,7 @@ public:
   Char(char val);
 
   void print(std::ostream& out, int level) const override;
+  void semantic() const override;
   llvm::Value* codegen() const override;
 };
 
@@ -59,6 +62,7 @@ public:
   Integer(int val);
 
   void print(std::ostream& out, int level) const override;
+  void semantic() const override;
   llvm::Value* codegen() const override;
 };
 
@@ -72,6 +76,7 @@ public:
   Real(double val);
 
   void print(std::ostream& out, int level) const override;
+  void semantic() const override;
   llvm::Value* codegen() const override;
 };
 
@@ -84,6 +89,7 @@ public:
   String(std::string val);
 
   void print(std::ostream& out, int level) const override;
+  void semantic() const override;
   llvm::Value* codegen() const override;
 };
 
@@ -95,6 +101,7 @@ public:
   Nil();
 
   void print(std::ostream& out, int level) const override;
+  void semantic() const override;
   llvm::Value* codegen() const override;
 };
 
@@ -110,6 +117,7 @@ public:
   Variable(std::string name);
 
   void print(std::ostream& out, int level) const override;
+  void semantic() const override;
   llvm::Value* codegen() const override;
 };
 
@@ -121,6 +129,7 @@ public:
   Array(std::unique_ptr<Expr> arr, std::unique_ptr<Expr> offset);
 
   void print(std::ostream& out, int level) const override;
+  void semantic() const override;
   llvm::Value* codegen() const override;
 };
 
@@ -132,6 +141,7 @@ public:
   Deref(std::unique_ptr<Expr> ptr);
 
   void print(std::ostream& out, int level) const override;
+  void semantic() const override;
   llvm::Value* codegen() const override;
 };
 
@@ -143,6 +153,7 @@ public:
   AddressOf(std::unique_ptr<Expr> var);
 
   void print(std::ostream& out, int level) const override;
+  void semantic() const override;
   llvm::Value* codegen() const override;
 };
 
@@ -155,6 +166,7 @@ public:
   CallExpr(std::string fun_name, std::vector<std::unique_ptr<Expr>> parameters);
 
   void print(std::ostream& out, int level) const override;
+  void semantic() const override;
   llvm::Value* codegen() const override;
 };
 
@@ -164,6 +176,7 @@ public:
   Result();
 
   void print(std::ostream& out, int level) const override;
+  void semantic() const override;
   llvm::Value* codegen() const override;
 };
 
@@ -176,6 +189,7 @@ public:
   BinaryExpr(std::string op, std::unique_ptr<Expr> left, std::unique_ptr<Expr> right);
 
   void print(std::ostream& out, int level) const override;
+  void semantic() const override;
   llvm::Value* codegen() const override;
 };
 
@@ -188,6 +202,7 @@ public:
   UnaryOp(std::string op, std::unique_ptr<Expr> operand);
 
   void print(std::ostream& out, int level) const override;
+  void semantic() const override;
   llvm::Value* codegen() const override;
 };
 
@@ -204,6 +219,7 @@ public:
   Empty();
 
   void print(std::ostream& out, int level) const override;
+  void semantic() const override;
   llvm::Value* codegen() const override;
 };
 
@@ -215,6 +231,7 @@ public:
   Block(std::vector<std::unique_ptr<Stmt>> stmt_list);
 
   void print(std::ostream& out, int level) const override;
+  void semantic() const override;
   llvm::Value* codegen() const override;
 };
 
@@ -227,6 +244,7 @@ public:
   VarNames(std::vector<std::string> names, std::shared_ptr<Type> type);
 
   void print(std::ostream& out, int level) const override;
+  void semantic() const override;
   llvm::Value* codegen() const override;
 };
 
@@ -238,6 +256,7 @@ public:
   VarDecl(std::vector<std::unique_ptr<VarNames>> var_names);
 
   void print(std::ostream& out, int level) const override;
+  void semantic() const override;
   llvm::Value* codegen() const override;
 };
 
@@ -249,6 +268,7 @@ public:
   LabelDecl(std::vector<std::string> names);
 
   void print(std::ostream& out, int level) const override;
+  void semantic() const override;
   llvm::Value* codegen() const override;
 };
 
@@ -260,6 +280,7 @@ public:
   VarAssign(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right);
 
   void print(std::ostream& out, int level) const override;
+  void semantic() const override;
   llvm::Value* codegen() const override;
 };
 
@@ -271,6 +292,7 @@ public:
   Goto(std::string label);
 
   void print(std::ostream& out, int level) const override;
+  void semantic() const override;
   llvm::Value* codegen() const override;
 };
 
@@ -283,6 +305,7 @@ public:
   Label(std::string label, std::unique_ptr<Stmt> stmt);
 
   void print(std::ostream& out, int level) const override;
+  void semantic() const override;
   llvm::Value* codegen() const override;
 };
 
@@ -295,6 +318,7 @@ public:
   If(std::unique_ptr<Expr> cond, std::unique_ptr<Stmt> if_stmt, std::unique_ptr<Stmt> else_stmt);
 
   void print(std::ostream& out, int level) const override;
+  void semantic() const override;
   llvm::Value* codegen() const override;
 };
 
@@ -307,6 +331,7 @@ public:
   While(std::unique_ptr<Expr> cond, std::unique_ptr<Stmt> stmt);
 
   void print(std::ostream& out, int level) const override;
+  void semantic() const override;
   llvm::Value* codegen() const override;
 };
 
@@ -322,6 +347,7 @@ public:
   Formal(bool pass_by_reference, std::vector<std::string> names, std::shared_ptr<Type> type);
 
   void print(std::ostream& out, int level) const override;
+  void semantic() const override;
   llvm::Value* codegen() const override;
 };
 
@@ -334,6 +360,7 @@ public:
   Body(std::vector<std::unique_ptr<Local>> local_decls, std::unique_ptr<Block> block);
 
   void print(std::ostream& out, int level) const override;
+  void semantic() const override;
   llvm::Value* codegen() const override;
 };
 
@@ -354,6 +381,7 @@ public:
   void set_forward(bool is_forward);
 
   void print(std::ostream& out, int level) const override;
+  void semantic() const override;
   llvm::Value* codegen() const override;
 };
 
@@ -366,6 +394,7 @@ public:
   CallStmt(std::string fun_name, std::vector<std::unique_ptr<Expr>> parameters);
 
   void print(std::ostream& out, int level) const override;
+  void semantic() const override;
   llvm::Value* codegen() const override;
 };
 
@@ -375,6 +404,7 @@ public:
   Return();
 
   void print(std::ostream& out, int level) const override;
+  void semantic() const override;
   llvm::Value* codegen() const override;
 };
 
@@ -386,6 +416,7 @@ public:
   New(std::unique_ptr<Expr> size, std::unique_ptr<Expr> l_value);
 
   void print(std::ostream& out, int level) const override;
+  void semantic() const override;
   llvm::Value* codegen() const override;
 };
 
@@ -398,6 +429,7 @@ public:
   Dispose(bool has_brackets, std::unique_ptr<Expr> l_value);
 
   void print(std::ostream& out, int level) const override;
+  void semantic() const override;
   llvm::Value* codegen() const override;
 };
 
@@ -410,6 +442,7 @@ public:
   Program(std::string name, std::unique_ptr<Body> body);
 
   void print(std::ostream& out, int level) const override;
+  void semantic() const override;
   llvm::Value* codegen() const override;
 };
 
