@@ -11,7 +11,7 @@ int Scope::get_size() const {
   return locals.size();
 }
 
-void Scope::insert(std::string name, std::shared_ptr<Type> t) {
+void Scope::insert(std::string name, std::shared_ptr<TypeInfo> t) {
   auto it = locals.find(name);
   if (it != locals.end())
     std::cout << "Variable has already been declared" << std::endl;

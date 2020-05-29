@@ -15,69 +15,73 @@ enum class BasicType {
 
 // Both `array [n] of t` and `array of t` types need a complete type t
 // The only incomplete type is `array of t` without a specified size
-class Type {
+class TypeInfo {
   BasicType t;
   bool complete;
 
 public:
-  Type(BasicType t, bool complete);
-  virtual ~Type() = default;
+  TypeInfo(BasicType t, bool complete);
+  virtual ~TypeInfo() = default;
 
+  bool is(BasicType t);
   virtual void print(std::ostream& out) const = 0;
 };
 
-class IntType : public Type {
+class IntType : public TypeInfo {
 public:
   IntType();
 
   void print(std::ostream& out) const override;
 };
 
-class RealType : public Type {
+class RealType : public TypeInfo {
 public:
   RealType();
 
   void print(std::ostream& out) const override;
 };
 
-class BoolType : public Type {
+class BoolType : public TypeInfo {
 public:
   BoolType();
 
   void print(std::ostream& out) const override;
 };
 
-class CharType : public Type {
+class CharType : public TypeInfo {
 public:
   CharType();
 
   void print(std::ostream& out) const override;
 };
 
-class ArrayType : public Type {
+// Complete array type with size n
+class ArrType : public TypeInfo {
   int size;
-  std::shared_ptr<Type> subtype;
+  std::shared_ptr<TypeInfo> subtype;
 
 public:
-  ArrayType(int size, std::shared_ptr<Type> subtype);
+  ArrType(int size, std::shared_ptr<TypeInfo> subtype);
 
   void print(std::ostream& out) const override;
 };
 
-class IArrayType : public Type {
-  std::shared_ptr<Type> subtype;
+// Incomplete array type
+class IArrType : public TypeInfo {
+  std::shared_ptr<TypeInfo> subtype;
 
 public:
-  IArrayType(std::shared_ptr<Type> subtype);
+  IArrType(std::shared_ptr<TypeInfo> subtype);
 
   void print(std::ostream& out) const override;
 };
 
-class PointerType : public Type {
-  std::shared_ptr<Type> subtype;
+// Pointer type
+class PtrType : public TypeInfo {
+  std::shared_ptr<TypeInfo> subtype;
 
 public:
-  PointerType(std::shared_ptr<Type> subtype);
+  PtrType(std::shared_ptr<TypeInfo> subtype);
 
   void print(std::ostream& out) const override;
 };

@@ -43,15 +43,15 @@ extern yy::parser::symbol_type yylex();
 %left               MUL DIV INT_DIV MOD AND
 %nonassoc           NOT CARET UNOP R_VAL AT
 
-%type<std::unique_ptr<Block>>   block
-%type<std::unique_ptr<Body>>    body
-%type<std::unique_ptr<Expr>>    optional_expr expr l_value r_value
-%type<std::unique_ptr<Formal>>  formal
-%type<std::unique_ptr<Fun>>     header
-%type<std::unique_ptr<Local>>   local
-%type<std::unique_ptr<Program>> program
-%type<std::unique_ptr<Stmt>>    stmt
-%type<std::shared_ptr<Type>>    type
+%type<std::unique_ptr<Block>>    block
+%type<std::unique_ptr<Body>>     body
+%type<std::unique_ptr<Expr>>     optional_expr expr l_value r_value
+%type<std::unique_ptr<Formal>>   formal
+%type<std::unique_ptr<Fun>>      header
+%type<std::unique_ptr<Local>>    local
+%type<std::unique_ptr<Program>>  program
+%type<std::unique_ptr<Stmt>>     stmt
+%type<std::shared_ptr<TypeInfo>> type
 
 %type<std::vector<std::unique_ptr<Expr>>>     next_parameter
 %type<std::vector<std::unique_ptr<Formal>>>   next_arg
@@ -120,13 +120,13 @@ optional_var:
 ;
 
 type:
-  INTEGER                                     { $$ = std::make_shared<IntType>();         }
-| REAL                                        { $$ = std::make_shared<RealType>();        }
-| BOOLEAN                                     { $$ = std::make_shared<BoolType>();        }
-| CHAR                                        { $$ = std::make_shared<CharType>();        }
-| ARRAY OP_BRACK INT_CONST CLOS_BRACK OF type { $$ = std::make_shared<ArrayType>($3, $6); }
-| ARRAY OF type                               { $$ = std::make_shared<IArrayType>($3);    }
-| CARET type                                  { $$ = std::make_shared<PointerType>($2);   }
+  INTEGER                                     { $$ = std::make_shared<IntType>();       }
+| REAL                                        { $$ = std::make_shared<RealType>();      }
+| BOOLEAN                                     { $$ = std::make_shared<BoolType>();      }
+| CHAR                                        { $$ = std::make_shared<CharType>();      }
+| ARRAY OP_BRACK INT_CONST CLOS_BRACK OF type { $$ = std::make_shared<ArrType>($3, $6); }
+| ARRAY OF type                               { $$ = std::make_shared<IArrType>($3);    }
+| CARET type                                  { $$ = std::make_shared<PtrType>($2);     }
 ;
 
 block:

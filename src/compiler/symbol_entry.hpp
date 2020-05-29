@@ -3,14 +3,16 @@
 
 #include <memory>
 
-class Type;
+class TypeInfo;
 
 class SymbolEntry {
-  std::shared_ptr<Type> t;
+  std::shared_ptr<TypeInfo> type;
 
 public:
   SymbolEntry();
-  SymbolEntry(std::shared_ptr<Type> t);
+  SymbolEntry(std::shared_ptr<TypeInfo> type);
+
+  std::shared_ptr<TypeInfo> get_type();
 };
 
 #endif

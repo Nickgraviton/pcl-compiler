@@ -1,5 +1,6 @@
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <string>
 
 #include <llvm/IR/IRBuilder.h>
@@ -8,17 +9,18 @@
 #include <llvm/IR/Value.h>
 
 #include "ast.hpp"
+#include "scope.hpp"
+#include "symbol_entry.hpp"
+#include "symbol_table.hpp"
 #include "types.hpp"
-
-// Declaration before using the llvm namespace to avoid conflict
-using type_ptr = std::shared_ptr<Type>;
 
 using namespace llvm;
 
 static LLVMContext TheContext;
 static IRBuilder<> Builder(TheContext);
 static std::unique_ptr<Module> TheModule;
-static std::map<std::string, Value *> NamedValues;
+static std::map<std::string, Value*> NamedValues;
+static SymbolTable symbol_table;
 
 using expr_ptr = std::unique_ptr<Expr>;
 using stmt_ptr = std::unique_ptr<Stmt>;
@@ -29,10 +31,19 @@ using formal_ptr = std::unique_ptr<Formal>;
 using body_ptr = std::unique_ptr<Body>;
 using fun_ptr = std::unique_ptr<Fun>;
 using program_ptr = std::unique_ptr<Program>;
+using type_ptr = std::shared_ptr<TypeInfo>;
 
 //------------------------------------------------------------------//
 //---------------------------Constructors---------------------------//
 //------------------------------------------------------------------//
+
+void Expr::set_type(std::shared_ptr<TypeInfo> type) {
+  this->type = type;
+}
+
+std::shared_ptr<TypeInfo> Expr::get_type() {
+  return type;
+}
 
 Boolean::Boolean(bool val)
     : val(val) {}
@@ -54,8 +65,8 @@ Nil::Nil() {}
 Variable::Variable(std::string name)
     : name(name) {}
 
-Array::Array(expr_ptr arr, expr_ptr offset)
-    : arr(std::move(arr)), offset(std::move(offset)) {}
+Array::Array(std::string name, expr_ptr offset)
+    : name(name), offset(std::move(offset)) {}
 
 Deref::Deref(expr_ptr ptr)
     : ptr(std::move(ptr)) {}
@@ -138,7 +149,7 @@ Program::Program(std::string name, body_ptr body)
 //------------------------------Print-------------------------------//
 //------------------------------------------------------------------//
 
-// Helper function that prints the current indent level number of spaces
+// Helper function that prints indent levels for the AST
 void print_level(std::ostream& out, int level) {
   while(level-- > 0)
     out << "  |";
@@ -182,8 +193,7 @@ void Variable::print(std::ostream& out, int level) const {
 
 void Array::print(std::ostream& out, int level) const {
   print_level(out, level);
-  out << "Array(arr, offset):" << std::endl;
-  arr->print(out, level + 1);
+  out << "Array(name: " << name << ", offset):" << std::endl;
   offset->print(out, level + 1);
 }
 
@@ -202,7 +212,7 @@ void AddressOf::print(std::ostream& out, int level) const {
 void CallExpr::print(std::ostream& out, int level) const {
   print_level(out, level);
   out << "CallExpr(fun_name: " << fun_name << ", parameters):" << std::endl;
-  for (auto &p : parameters)
+  for (auto& p : parameters)
     p->print(out, level + 1);
 }
 
@@ -232,7 +242,7 @@ void Empty::print(std::ostream& out, int level) const {
 void Block::print(std::ostream& out, int level) const {
   print_level(out, level);
   out << "Block(stmt_list):" << std::endl;
-  for (auto &s : stmt_list)
+  for (auto& s : stmt_list)
     s->print(out, level + 1);
 }
 
@@ -241,7 +251,7 @@ void VarNames::print(std::ostream& out, int level) const {
   out << "VarNames(type: ";
   type->print(out);
   out << ", names):" << std::endl;
-  for (auto &n : names) {
+  for (auto& n : names) {
     print_level(out, level + 1);
     out << n << std::endl;
   }
@@ -250,14 +260,14 @@ void VarNames::print(std::ostream& out, int level) const {
 void VarDecl::print(std::ostream& out, int level) const {
   print_level(out, level);
   out << "VarDecl(var_names):" << std::endl;
-  for (auto &v : var_names)
+  for (auto& v : var_names)
     v->print(out, level + 1);
 }
 
 void LabelDecl::print(std::ostream& out, int level) const {
   print_level(out, level);
   out << "LabelDecl(names):" << std::endl;
-  for (auto &n : names) {
+  for (auto& n : names) {
     print_level(out, level + 1);
     out << n << std::endl;
   }
@@ -302,7 +312,7 @@ void Formal::print(std::ostream& out, int level) const {
   out << "Formal(pass_by_reference: " << pass_by_reference << ", names, type: ";
   type->print(out);
   out << "):" << std::endl;
-  for (auto &n : names) {
+  for (auto& n : names) {
     print_level(out, level + 1);
     out << n << std::endl;
   }
@@ -311,7 +321,7 @@ void Formal::print(std::ostream& out, int level) const {
 void Body::print(std::ostream& out, int level) const {
   print_level(out, level);
   out << "Body(local_decls, block):" << std::endl;
-  for (auto &l : local_decls)
+  for (auto& l : local_decls)
     l->print(out, level + 1);
   block->print(out, level + 1);
 }
@@ -324,7 +334,7 @@ void Fun::print(std::ostream& out, int level) const {
     return_type->print(out);
   }
   out << ", formal_parameters, body, is_forward: " << is_forward << "):" << std::endl;
-  for (auto &f : formal_parameters)
+  for (auto& f : formal_parameters)
     f->print(out, level + 1);
   body->print(out, level + 1);
 }
@@ -332,7 +342,7 @@ void Fun::print(std::ostream& out, int level) const {
 void CallStmt::print(std::ostream& out, int level) const {
   print_level(out, level);
   out << "CallStmt(fun_name: " << fun_name << ", parameters):" << std::endl;
-  for (auto &p : parameters)
+  for (auto& p : parameters)
     p->print(out, level + 1);
 }
 
@@ -365,69 +375,114 @@ void Program::print(std::ostream& out, int level) const {
 //----------------------------Semantic------------------------------//
 //------------------------------------------------------------------//
 
-void Boolean::semantic() const {}
+void Boolean::semantic() {
+  set_type(std::make_shared<BoolType>());
+}
 
-void Char::semantic() const {}
+void Char::semantic() {
+  set_type(std::make_shared<CharType>());
+}
 
-void Integer::semantic() const {}
+void Integer::semantic() {
+  set_type(std::make_shared<IntType>());
+}
 
-void Real::semantic() const {}
+void Real::semantic() {
+  set_type(std::make_shared<RealType>());
+}
 
-void String::semantic() const {}
+void String::semantic() {
+  set_type(std::make_shared<ArrType>(val.length(), std::make_shared<CharType>()));
+}
 
-void Nil::semantic() const {}
+void Nil::semantic() {
+  set_type(std::make_shared<PtrType>(nullptr));
+}
 
-void Variable::semantic() const {}
+// Helper function
+std::optional<SymbolEntry> lookup(std::string name) {
+  auto result = symbol_table.lookup(name);
+  if (result) {
+    return result;
+  } else {
+    std::cerr << "Error: Identifier " << name << " hasn't been declared" << std::endl;
+    return std::nullopt;
+  }
+}
 
-void Array::semantic() const {}
+void Variable::semantic() {
+  auto result = lookup(name);
+  set_type(result.value().get_type());
+}
 
-void Deref::semantic() const {}
+void Array::semantic() {
+  auto result = lookup(name);
+  set_type(result.value().get_type());
 
-void AddressOf::semantic() const {}
+  offset->semantic();
+  auto type = offset->get_type();
+  if (!type->is(BasicType::Integer))
+    std::cerr << "Array index needs to be of integer type" << std::endl;
+}
 
-void CallExpr::semantic() const {}
+void Deref::semantic() {}
 
-void Result::semantic() const {}
+void AddressOf::semantic() {}
 
-void BinaryExpr::semantic() const {}
+void CallExpr::semantic() {}
 
-void UnaryOp::semantic() const {}
+void Result::semantic() {}
 
-void Empty::semantic() const {}
+void BinaryExpr::semantic() {}
 
-void Block::semantic() const {}
+void UnaryOp::semantic() {}
 
-void VarNames::semantic() const {}
+void Empty::semantic() {}
 
-void VarDecl::semantic() const {}
+void Block::semantic() {
+  for (auto& s : stmt_list)
+    s->semantic();
+}
 
-void LabelDecl::semantic() const {}
+void VarNames::semantic() {}
 
-void VarAssign::semantic() const {}
+void VarDecl::semantic() {}
 
-void Goto::semantic() const {}
+void LabelDecl::semantic() {}
 
-void Label::semantic() const {}
+void VarAssign::semantic() {}
 
-void If::semantic() const {}
+void Goto::semantic() {}
 
-void While::semantic() const {}
+void Label::semantic() {}
 
-void Formal::semantic() const {}
+void If::semantic() {}
 
-void Body::semantic() const {}
+void While::semantic() {}
 
-void Fun::semantic() const {}
+void Formal::semantic() {}
 
-void CallStmt::semantic() const {}
+void Body::semantic() {
+  symbol_table.open_scope();
 
-void Return::semantic() const {}
+  for (auto& l : local_decls)
+    l->semantic();
+  block->semantic();
 
-void New::semantic() const {}
+  symbol_table.close_scope();
+}
 
-void Dispose::semantic() const {}
+void Fun::semantic() {}
 
-void Program::semantic() const {}
+void CallStmt::semantic() {}
+
+void Return::semantic() {}
+
+void New::semantic() {}
+
+void Dispose::semantic() {}
+
+void Program::semantic() {}
 
 //------------------------------------------------------------------//
 //-----------------------------Codegen------------------------------//
