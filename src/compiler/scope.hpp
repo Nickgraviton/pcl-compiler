@@ -6,18 +6,18 @@
 #include <optional>
 #include <string>
 
-class SymbolEntry;
+class Entry;
 class TypeInfo;
 
 class Scope {
-  std::map<std::string, SymbolEntry> locals;
+  std::map<std::string, std::shared_ptr<Entry>> locals;
 
 public:
   Scope();
 
   int get_size() const;
-  void insert(std::string name, std::shared_ptr<TypeInfo> t);
-  std::optional<SymbolEntry> lookup(std::string name);
+  void insert(std::string name, std::shared_ptr<Entry> entry);
+  std::optional<std::shared_ptr<Entry>> lookup(std::string name);
 };
 
 #endif

@@ -1,5 +1,6 @@
 #include <iostream>
 #include <memory>
+#include <optional>
 
 #include "types.hpp"
 
@@ -10,28 +11,40 @@ using type_ptr = std::shared_ptr<TypeInfo>;
 //------------------------------------------------------------------//
 
 TypeInfo::TypeInfo(BasicType t, bool complete)
-    : t(t), complete(complete) {}
+  : t(t), complete(complete) {}
 
 IntType::IntType()
-    : TypeInfo(BasicType::Integer, true) {}
+  : TypeInfo(BasicType::Integer, true) {}
 
 RealType::RealType()
-    : TypeInfo(BasicType::Real, true) {}
+  : TypeInfo(BasicType::Real, true) {}
 
 BoolType::BoolType()
-    : TypeInfo(BasicType::Boolean, true) {}
+  : TypeInfo(BasicType::Boolean, true) {}
 
 CharType::CharType()
-    : TypeInfo(BasicType::Char, true) {}
+  : TypeInfo(BasicType::Char, true) {}
 
 ArrType::ArrType(int size, type_ptr subtype)
-    : TypeInfo(BasicType::Array, true), size(size), subtype(std::move(subtype)) {}
+  : TypeInfo(BasicType::Array, true), size(size), subtype(subtype) {}
+
+std::shared_ptr<TypeInfo> ArrType::get_subtype() {
+  return this->subtype;
+}
 
 IArrType::IArrType(type_ptr subtype)
-    : TypeInfo(BasicType::Array, false), subtype(std::move(subtype)) {}
+  : TypeInfo(BasicType::IArray, false), size(std::nullopt), subtype(subtype) {}
+
+std::shared_ptr<TypeInfo> IArrType::get_subtype() {
+  return this->subtype;
+}
 
 PtrType::PtrType(type_ptr subtype)
-    : TypeInfo(BasicType::Pointer, true), subtype(std::move(subtype)) {}
+  : TypeInfo(BasicType::Pointer, true), subtype(subtype) {}
+
+std::shared_ptr<TypeInfo> PtrType::get_subtype() {
+  return this->subtype;
+}
 
 //------------------------------------------------------------------//
 //------------------------------Print-------------------------------//

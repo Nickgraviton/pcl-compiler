@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <memory>
+#include <optional>
 
 enum class BasicType {
   Integer,
@@ -10,6 +11,7 @@ enum class BasicType {
   Boolean,
   Char,
   Array,
+  IArray,
   Pointer
 };
 
@@ -63,16 +65,19 @@ class ArrType : public TypeInfo {
 public:
   ArrType(int size, std::shared_ptr<TypeInfo> subtype);
 
+  std::shared_ptr<TypeInfo> get_subtype();
   void print(std::ostream& out) const override;
 };
 
 // Incomplete array type
 class IArrType : public TypeInfo {
+  std::optional<int> size;
   std::shared_ptr<TypeInfo> subtype;
 
 public:
   IArrType(std::shared_ptr<TypeInfo> subtype);
 
+  std::shared_ptr<TypeInfo> get_subtype();
   void print(std::ostream& out) const override;
 };
 
@@ -83,6 +88,7 @@ class PtrType : public TypeInfo {
 public:
   PtrType(std::shared_ptr<TypeInfo> subtype);
 
+  std::shared_ptr<TypeInfo> get_subtype();
   void print(std::ostream& out) const override;
 };
 

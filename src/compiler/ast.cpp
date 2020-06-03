@@ -37,91 +37,87 @@ using type_ptr = std::shared_ptr<TypeInfo>;
 //---------------------------Constructors---------------------------//
 //------------------------------------------------------------------//
 
-void Expr::set_type(std::shared_ptr<TypeInfo> type) {
-  this->type = type;
-}
-
 std::shared_ptr<TypeInfo> Expr::get_type() {
-  return type;
+  return this->type;
 }
 
 Boolean::Boolean(bool val)
-    : val(val) {}
+  : val(val) {}
 
 Char::Char(char val)
-    : val(val) {}
+  : val(val) {}
 
 Integer::Integer(int val)
-    : val(val) {}
+  : val(val) {}
 
 Real::Real(double val)
-    : val(val) {}
+  : val(val) {}
 
 String::String(std::string val)
-    : val(val) {}
+  : val(val) {}
 
 Nil::Nil() {}
 
 Variable::Variable(std::string name)
-    : name(name) {}
+  : name(name) {}
 
-Array::Array(std::string name, expr_ptr offset)
-    : name(name), offset(std::move(offset)) {}
+Array::Array(expr_ptr arr, expr_ptr index)
+  : arr(std::move(arr)), index(std::move(index)) {}
 
-Deref::Deref(expr_ptr ptr)
-    : ptr(std::move(ptr)) {}
+Deref::Deref(expr_ptr var)
+  : var(std::move(var)) {}
 
 AddressOf::AddressOf(expr_ptr var)
-    : var(std::move(var)) {}
+  : var(std::move(var)) {}
 
 CallExpr::CallExpr(std::string fun_name, std::vector<expr_ptr> parameters)
-    : fun_name(fun_name), parameters(std::move(parameters)) {}
+  : fun_name(fun_name), parameters(std::move(parameters)) {}
 
 Result::Result() {}
 
 BinaryExpr::BinaryExpr(std::string op, expr_ptr left, expr_ptr right)
-    : op(op), left(std::move(left)), right(std::move(right)) {}
+  : op(op), left(std::move(left)), right(std::move(right)) {}
 
 UnaryOp::UnaryOp(std::string op, expr_ptr operand)
-    : op(op), operand(std::move(operand)) {}
+  : op(op), operand(std::move(operand)) {}
 
 Empty::Empty() {}
 
 Block::Block(std::vector<stmt_ptr> stmt_list)
-    : stmt_list(std::move(stmt_list)) {}
+  : stmt_list(std::move(stmt_list)) {}
 
 VarNames::VarNames(std::vector<std::string> names, type_ptr type)
-    : names(names), type(type) {}
+  : names(names), type(type) {}
 
 VarDecl::VarDecl(std::vector<varnames_ptr> var_names)
-    : var_names(std::move(var_names)) {}
+  : var_names(std::move(var_names)) {}
 
 LabelDecl::LabelDecl(std::vector<std::string> names)
-    : names(names) {}
+  : names(names) {}
 
 VarAssign::VarAssign(expr_ptr left, expr_ptr right)
-    : left(std::move(left)), right(std::move(right)) {}
+  : left(std::move(left)), right(std::move(right)) {}
 
 Goto::Goto(std::string label)
-    : label(label) {}
+  : label(label) {}
 
 Label::Label(std::string label, stmt_ptr stmt)
-    : label(label), stmt(std::move(stmt)) {}
+  : label(label), stmt(std::move(stmt)) {}
 
 If::If(expr_ptr cond, stmt_ptr if_stmt, stmt_ptr else_stmt)
-    : cond(std::move(cond)), if_stmt(std::move(if_stmt)), else_stmt(std::move(else_stmt)) {}
+  : cond(std::move(cond)), if_stmt(std::move(if_stmt)), else_stmt(std::move(else_stmt)) {}
 
 While::While(expr_ptr cond, stmt_ptr stmt)
-    : cond(std::move(cond)), stmt(std::move(stmt)) {}
+  : cond(std::move(cond)), stmt(std::move(stmt)) {}
 
 Formal::Formal(bool pass_by_reference, std::vector<std::string> names, type_ptr type)
-    : pass_by_reference(pass_by_reference), names(names), type(type) {}
+  : pass_by_reference(pass_by_reference), names(names), type(type) {}
 
 Body::Body(std::vector<local_ptr> local_decls, block_ptr block)
-    : local_decls(std::move(local_decls)), block(std::move(block)) {}
+  : local_decls(std::move(local_decls)), block(std::move(block)) {}
 
 Fun::Fun(std::string fun_name, type_ptr return_type, std::vector<formal_ptr> formal_parameters)
-    : fun_name(fun_name), return_type(return_type), formal_parameters(std::move(formal_parameters)) {}
+  : fun_name(fun_name), return_type(return_type), formal_parameters(std::move(formal_parameters)) {}
 
 void Fun::set_body(body_ptr body) {
   this->body = std::move(body);
@@ -132,18 +128,18 @@ void Fun::set_forward(bool is_forward) {
 }
 
 CallStmt::CallStmt(std::string fun_name, std::vector<expr_ptr> parameters)
-    : fun_name(fun_name), parameters(std::move(parameters)) {}
+  : fun_name(fun_name), parameters(std::move(parameters)) {}
 
 Return::Return() {}
 
 New::New(expr_ptr size, expr_ptr l_value)
-    : size(std::move(size)), l_value(std::move(l_value)) {}
+  : size(std::move(size)), l_value(std::move(l_value)) {}
 
 Dispose::Dispose(bool has_brackets, expr_ptr l_value)
-    : has_brackets(has_brackets), l_value(std::move(l_value)) {}
+  : has_brackets(has_brackets), l_value(std::move(l_value)) {}
 
 Program::Program(std::string name, body_ptr body)
-    : name(name), body(std::move(body)) {}
+  : name(name), body(std::move(body)) {}
 
 //------------------------------------------------------------------//
 //------------------------------Print-------------------------------//
@@ -158,27 +154,27 @@ void print_level(std::ostream& out, int level) {
 
 void Boolean::print(std::ostream& out, int level) const {
   print_level(out, level);
-  out << "Boolean(" << val << ")" << std::endl;
+  out << "Boolean(" << this->val << ")" << std::endl;
 }
 
 void Char::print(std::ostream& out, int level) const {
   print_level(out, level);
-  out << "Char(" << val << ")" << std::endl;
+  out << "Char(" << this->val << ")" << std::endl;
 }
 
 void Integer::print(std::ostream& out, int level) const {
   print_level(out, level);
-  out << "Integer(" << val << ")" << std::endl;
+  out << "Integer(" << this->val << ")" << std::endl;
 }
 
 void Real::print(std::ostream& out, int level) const {
   print_level(out, level);
-  out << "Real(" << val << ")" << std::endl;
+  out << "Real(" << this->val << ")" << std::endl;
 }
 
 void String::print(std::ostream& out, int level) const {
   print_level(out, level);
-  out << "String(" << val << ")" << std::endl;
+  out << "String(" << this->val << ")" << std::endl;
 }
 
 void Nil::print(std::ostream& out, int level) const {
@@ -188,31 +184,32 @@ void Nil::print(std::ostream& out, int level) const {
 
 void Variable::print(std::ostream& out, int level) const {
   print_level(out, level);
-  out << "Variable(name: " << name << ")" << std::endl;
+  out << "Variable(name: " << this->name << ")" << std::endl;
 }
 
 void Array::print(std::ostream& out, int level) const {
   print_level(out, level);
-  out << "Array(name: " << name << ", offset):" << std::endl;
-  offset->print(out, level + 1);
+  out << "Array(arr, index):" << std::endl;
+  this->arr->print(out, level + 1);
+  this->index->print(out, level + 1);
 }
 
 void Deref::print(std::ostream& out, int level) const {
   print_level(out, level);
-  out << "Deref(ptr):" << std::endl;
-  ptr->print(out, level + 1);
+  out << "Deref(var):" << std::endl;
+  this->var->print(out, level + 1);
 }
 
 void AddressOf::print(std::ostream& out, int level) const {
   print_level(out, level);
   out << "AddressOf(var):" << std::endl;
-  var->print(out, level + 1);
+  this->var->print(out, level + 1);
 }
 
 void CallExpr::print(std::ostream& out, int level) const {
   print_level(out, level);
-  out << "CallExpr(fun_name: " << fun_name << ", parameters):" << std::endl;
-  for (auto& p : parameters)
+  out << "CallExpr(fun_name: " << this->fun_name << ", parameters):" << std::endl;
+  for (auto& p : this->parameters)
     p->print(out, level + 1);
 }
 
@@ -223,15 +220,15 @@ void Result::print(std::ostream& out, int level) const {
 
 void BinaryExpr::print(std::ostream& out, int level) const {
   print_level(out, level);
-  out << "BinaryExpr(op: " << op << ", left, right):" << std::endl;
-  left->print(out, level + 1);
-  right->print(out, level + 1);
+  out << "BinaryExpr(op: " << this->op << ", left, right):" << std::endl;
+  this->left->print(out, level + 1);
+  this->right->print(out, level + 1);
 }
 
 void UnaryOp::print(std::ostream& out, int level) const {
   print_level(out, level);
-  out << "UnaryOp(op: " << op << ", operand):" << std::endl;
-  operand->print(out, level + 1);
+  out << "UnaryOp(op: " << this->op << ", operand):" << std::endl;
+  this->operand->print(out, level + 1);
 }
 
 void Empty::print(std::ostream& out, int level) const {
@@ -242,16 +239,16 @@ void Empty::print(std::ostream& out, int level) const {
 void Block::print(std::ostream& out, int level) const {
   print_level(out, level);
   out << "Block(stmt_list):" << std::endl;
-  for (auto& s : stmt_list)
+  for (auto& s : this->stmt_list)
     s->print(out, level + 1);
 }
 
 void VarNames::print(std::ostream& out, int level) const {
   print_level(out, level);
   out << "VarNames(type: ";
-  type->print(out);
+  this->type->print(out);
   out << ", names):" << std::endl;
-  for (auto& n : names) {
+  for (auto& n : this->names) {
     print_level(out, level + 1);
     out << n << std::endl;
   }
@@ -260,14 +257,14 @@ void VarNames::print(std::ostream& out, int level) const {
 void VarDecl::print(std::ostream& out, int level) const {
   print_level(out, level);
   out << "VarDecl(var_names):" << std::endl;
-  for (auto& v : var_names)
+  for (auto& v : this->var_names)
     v->print(out, level + 1);
 }
 
 void LabelDecl::print(std::ostream& out, int level) const {
   print_level(out, level);
   out << "LabelDecl(names):" << std::endl;
-  for (auto& n : names) {
+  for (auto& n : this->names) {
     print_level(out, level + 1);
     out << n << std::endl;
   }
@@ -276,43 +273,43 @@ void LabelDecl::print(std::ostream& out, int level) const {
 void VarAssign::print(std::ostream& out, int level) const {
   print_level(out, level);
   out << "VarAssign(left, right):" << std::endl;
-  left->print(out, level + 1);
-  right->print(out, level + 1);
+  this->left->print(out, level + 1);
+  this->right->print(out, level + 1);
 }
 
 void Goto::print(std::ostream& out, int level) const {
   print_level(out, level);
-  out << "Goto(label: " << label << ")" << std::endl;
+  out << "Goto(label: " << this->label << ")" << std::endl;
 }
 
 void Label::print(std::ostream& out, int level) const {
   print_level(out, level);
-  out << "Label(label: " << label << ", stmt):" << std::endl;
-  stmt->print(out, level + 1);
+  out << "Label(label: " << this->label << ", stmt):" << std::endl;
+  this->stmt->print(out, level + 1);
 }
 
 void If::print(std::ostream& out, int level) const {
   print_level(out, level);
   out << "If(cond, if_stmt, else_stmt):" << std::endl;
-  cond->print(out, level + 1);
-  if_stmt->print(out, level + 1);
-  if (else_stmt)
-    else_stmt->print(out, level + 1);
+  this->cond->print(out, level + 1);
+  this->if_stmt->print(out, level + 1);
+  if (this->else_stmt)
+    this->else_stmt->print(out, level + 1);
 }
 
 void While::print(std::ostream& out, int level) const {
   print_level(out, level);
   out << "While(cond, stmt):" << std::endl;
-  cond->print(out, level + 1);
-  stmt->print(out, level + 1);
+  this->cond->print(out, level + 1);
+  this->stmt->print(out, level + 1);
 }
 
 void Formal::print(std::ostream& out, int level) const {
   print_level(out, level);
-  out << "Formal(pass_by_reference: " << pass_by_reference << ", names, type: ";
-  type->print(out);
+  out << "Formal(pass_by_reference: " << this->pass_by_reference << ", names, type: ";
+  this->type->print(out);
   out << "):" << std::endl;
-  for (auto& n : names) {
+  for (auto& n : this->names) {
     print_level(out, level + 1);
     out << n << std::endl;
   }
@@ -321,28 +318,28 @@ void Formal::print(std::ostream& out, int level) const {
 void Body::print(std::ostream& out, int level) const {
   print_level(out, level);
   out << "Body(local_decls, block):" << std::endl;
-  for (auto& l : local_decls)
+  for (auto& l : this->local_decls)
     l->print(out, level + 1);
-  block->print(out, level + 1);
+  this->block->print(out, level + 1);
 }
 
 void Fun::print(std::ostream& out, int level) const {
   print_level(out, level);
-  out << "Fun(fun_name: " << fun_name << ", ";
-  if (return_type) {
+  out << "Fun(fun_name: " << this->fun_name << ", ";
+  if (this->return_type) {
     out << "type: ";
-    return_type->print(out);
+    this->return_type->print(out);
   }
-  out << ", formal_parameters, body, is_forward: " << is_forward << "):" << std::endl;
-  for (auto& f : formal_parameters)
+  out << ", formal_parameters, body, is_forward: " << this->is_forward << "):" << std::endl;
+  for (auto& f : this->formal_parameters)
     f->print(out, level + 1);
-  body->print(out, level + 1);
+  this->body->print(out, level + 1);
 }
 
 void CallStmt::print(std::ostream& out, int level) const {
   print_level(out, level);
-  out << "CallStmt(fun_name: " << fun_name << ", parameters):" << std::endl;
-  for (auto& p : parameters)
+  out << "CallStmt(fun_name: " << this->fun_name << ", parameters):" << std::endl;
+  for (auto& p : this->parameters)
     p->print(out, level + 1);
 }
 
@@ -354,21 +351,21 @@ void Return::print(std::ostream& out, int level) const {
 void New::print(std::ostream& out, int level) const {
   print_level(out, level);
   out << "New(size, l_value):" << std::endl;
-  if (size)
-    size->print(out, level + 1);
-  l_value->print(out, level + 1);
+  if (this->size)
+    this->size->print(out, level + 1);
+  this->l_value->print(out, level + 1);
 }
 
 void Dispose::print(std::ostream& out, int level) const {
   print_level(out, level);
-  out << "Dispose(has_brackets: " << has_brackets << ", l_value):" << std::endl;
-  l_value->print(out, level + 1);
+  out << "Dispose(has_brackets: " << this->has_brackets << ", l_value):" << std::endl;
+  this->l_value->print(out, level + 1);
 }
 
 void Program::print(std::ostream& out, int level) const {
   print_level(out, level);
-  out << "Program(name: " << name << ", body):" << std::endl;
-  body->print(out, level + 1);
+  out << "Program(name: " << this->name << ", body):" << std::endl;
+  this->body->print(out, level + 1);
 }
 
 //------------------------------------------------------------------//
@@ -376,66 +373,102 @@ void Program::print(std::ostream& out, int level) const {
 //------------------------------------------------------------------//
 
 void Boolean::semantic() {
-  set_type(std::make_shared<BoolType>());
+  this->type = std::make_shared<BoolType>();
 }
 
 void Char::semantic() {
-  set_type(std::make_shared<CharType>());
+  this->type = std::make_shared<CharType>();
 }
 
 void Integer::semantic() {
-  set_type(std::make_shared<IntType>());
+  this->type = std::make_shared<IntType>();
 }
 
 void Real::semantic() {
-  set_type(std::make_shared<RealType>());
+  this->type = std::make_shared<RealType>();
 }
 
 void String::semantic() {
-  set_type(std::make_shared<ArrType>(val.length(), std::make_shared<CharType>()));
+  this->type = std::make_shared<ArrType>(val.length(), std::make_shared<CharType>());
 }
 
 void Nil::semantic() {
-  set_type(std::make_shared<PtrType>(nullptr));
+  this->type = std::make_shared<PtrType>(nullptr);
 }
 
 // Helper function
-std::optional<SymbolEntry> lookup(std::string name) {
+std::optional<Entry> lookup(std::string name) {
   auto result = symbol_table.lookup(name);
-  if (result) {
-    return result;
-  } else {
+  if (!result)
     std::cerr << "Error: Identifier " << name << " hasn't been declared" << std::endl;
-    return std::nullopt;
-  }
+  return result;
 }
 
 void Variable::semantic() {
-  auto result = lookup(name);
-  set_type(result.value().get_type());
+  auto result = lookup(this->name);
+ //ERROR this->type = result.value().get_type();
 }
 
 void Array::semantic() {
-  auto result = lookup(name);
-  set_type(result.value().get_type());
+  this->arr->semantic();
+  auto arr_type = this->arr->get_type();
+  if (arr_type->is(BasicType::Array)) {
+    std::shared_ptr<ArrType> a_t = std::static_pointer_cast<ArrType>(arr_type);
+    this->type = a_t->get_subtype();
+  } else if (arr_type->is(BasicType::IArray)) {
+    std::shared_ptr<IArrType> ia_t = std::static_pointer_cast<IArrType>(arr_type);
+    this->type = ia_t->get_subtype();
+  } else {
+    std::cerr << "Variable is not of array type" << std::endl;
+  }
 
-  offset->semantic();
-  auto type = offset->get_type();
-  if (!type->is(BasicType::Integer))
-    std::cerr << "Array index needs to be of integer type" << std::endl;
+  this->index->semantic();
+  auto index_type = this->index->get_type();
+  if (!index_type->is(BasicType::Integer))
+    std::cerr << "Array index is not of integer type" << std::endl;
 }
 
-void Deref::semantic() {}
+void Deref::semantic() {
+  this->var->semantic();
+  auto var_type = this->var->get_type();
+  if (var_type->is(BasicType::Pointer)) {
+    std::shared_ptr<PtrType> p_t = std::static_pointer_cast<PtrType>(var_type);
+    this->type = p_t->get_subtype();
+  } else {
+    std::cerr << "Variable is not of pointer type" << std::endl;
+  }
+}
 
-void AddressOf::semantic() {}
+void AddressOf::semantic() {
+  this->var->semantic();
+  auto var_type = this->var->get_type();
+  this->type = std::make_shared<PtrType>(var_type);
+}
 
-void CallExpr::semantic() {}
+void CallExpr::semantic() {
+  // Lookup function and set its return type as expr type
+  auto result = lookup(this->fun_name);
+  //ERRORthis->type = result.value().get_type();
 
-void Result::semantic() {}
+  //check if all the parameters have the correct type compared to the function definition
+}
 
-void BinaryExpr::semantic() {}
+void Result::semantic() {
 
-void UnaryOp::semantic() {}
+  //check if inside a function and not a procedure
+  //set type as the function's return type
+}
+
+void BinaryExpr::semantic() {
+  //check and possibly cast integers to real for arithmetic operations
+  //check if valid types for mod and div
+  //check if valid types for bool
+}
+
+void UnaryOp::semantic() {
+  //check if not has bool
+  //check if plus and minus have arithmetic types and make result same type
+}
 
 void Empty::semantic() {}
 
@@ -444,23 +477,44 @@ void Block::semantic() {
     s->semantic();
 }
 
-void VarNames::semantic() {}
+void VarNames::semantic() {
+  //loop names vector and entries to symbol table
+}
 
-void VarDecl::semantic() {}
+void VarDecl::semantic() {
+  //loop var_names declarations and call semantic on each of them
+}
 
-void LabelDecl::semantic() {}
+void LabelDecl::semantic() {
+  //loop names vector andd labels to symbol table
+}
 
-void VarAssign::semantic() {}
+void VarAssign::semantic() {
+  //check if assignment is possible
+}
 
-void Goto::semantic() {}
+void Goto::semantic() {
+  //check if label has been delcared
+}
 
-void Label::semantic() {}
+void Label::semantic() {
+  //check if label has been declared
+  //call semantic on statement
+}
 
-void If::semantic() {}
+void If::semantic() {
+  //check if condition is bool
+  //call semantic on if and on else if it exsists
+}
 
-void While::semantic() {}
+void While::semantic() {
+  //check if condition is bool
+  //call semantic on block
+}
 
-void Formal::semantic() {}
+void Formal::semantic() {
+
+}
 
 void Body::semantic() {
   symbol_table.open_scope();
@@ -474,7 +528,10 @@ void Body::semantic() {
 
 void Fun::semantic() {}
 
-void CallStmt::semantic() {}
+void CallStmt::semantic() {
+//check if all the parameters have the correct type compared to the function definition
+
+}
 
 void Return::semantic() {}
 
@@ -482,7 +539,9 @@ void New::semantic() {}
 
 void Dispose::semantic() {}
 
-void Program::semantic() {}
+void Program::semantic() {
+  //call semantic on class variables
+}
 
 //------------------------------------------------------------------//
 //-----------------------------Codegen------------------------------//

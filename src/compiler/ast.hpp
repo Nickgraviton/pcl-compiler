@@ -18,10 +18,10 @@ public:
 };
 
 class Expr : public Node {
+protected:
   std::shared_ptr<TypeInfo> type;
 
 public:
-  void set_type(std::shared_ptr<TypeInfo> type);
   std::shared_ptr<TypeInfo> get_type();
 };
 
@@ -130,11 +130,10 @@ public:
 
 // Array expression
 class Array : public Expr {
-  std::string name;
-  std::unique_ptr<Expr> offset;
+  std::unique_ptr<Expr> arr, index;
 
 public:
-  Array(std::string name, std::unique_ptr<Expr> offset);
+  Array(std::unique_ptr<Expr> arr, std::unique_ptr<Expr> index);
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
@@ -143,10 +142,10 @@ public:
 
 // Dereference expression
 class Deref : public Expr {
-  std::unique_ptr<Expr> ptr;
+  std::unique_ptr<Expr> var;
 
 public:
-  Deref(std::unique_ptr<Expr> ptr);
+  Deref(std::unique_ptr<Expr> var);
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;

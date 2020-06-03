@@ -8,20 +8,20 @@
 Scope::Scope() {}
 
 int Scope::get_size() const {
-  return locals.size();
+  return this->locals.size();
 }
 
-void Scope::insert(std::string name, std::shared_ptr<TypeInfo> t) {
-  auto it = locals.find(name);
-  if (it != locals.end())
-    std::cout << "Variable has already been declared" << std::endl;
-  locals[name] = SymbolEntry(t);
+void Scope::insert(std::string name, std::shared_ptr<Entry> entry) {
+  auto it = this->locals.find(name);
+  if (it != this->locals.end())
+    std::cout << "Name \"" << name << "\" has already been declared" << std::endl;
+  this->locals[name] = entry;
 }
 
-std::optional<SymbolEntry> Scope::lookup(std::string name) {
-  auto it = locals.find(name);
-  if (it != locals.end())
-    return locals[name];
+std::optional<std::shared_ptr<Entry>> Scope::lookup(std::string name) {
+  auto it = this->locals.find(name);
+  if (it != this->locals.end())
+    return this->locals[name];
   else
     return std::nullopt;
 }
