@@ -1,25 +1,24 @@
 #ifndef __SYMBOL_ENTRY_HPP__
 #define __SYMBOL_ENTRY_HPP__
 
-#include <map>
 #include <memory>
-#include <optional>
+#include <vector>
 
 class TypeInfo;
 
 class Entry {
-public:
-  Entry();
-};
-
-class VariableEntry : public Entry {
   std::shared_ptr<TypeInfo> type;
 
 public:
-  VariableEntry();
-  VariableEntry(std::shared_ptr<TypeInfo> type);
+  Entry(std::shared_ptr<TypeInfo> type);
+  virtual ~Entry() = default;
 
-  std::shared_ptr<TypeInfo> get_type();
+  std::shared_ptr<TypeInfo> get_type() const;
+};
+
+class VariableEntry : public Entry {
+public:
+  VariableEntry(std::shared_ptr<TypeInfo> type);
 };
 
 class FunctionParameter {
@@ -27,19 +26,19 @@ class FunctionParameter {
   std::shared_ptr<TypeInfo> type;
 
 public:
-  FunctionParameter();
   FunctionParameter(bool pass_by_reference, std::shared_ptr<TypeInfo> type);
 
   std::shared_ptr<TypeInfo> get_type();
 };
 
 class FunctionEntry : public Entry {
-  std::map<std::string, FunctionParameter> parameters;
+  std::vector<FunctionParameter> parameters;
 
 public:
-  FunctionEntry();
+  FunctionEntry(std::shared_ptr<TypeInfo> type);
 
-  void insert(std::string name, FunctionParameter parameter);
-  std::optional<FunctionParameter> lookup(std::string name);
+  void add_parameter(FunctionParameter parameter);
+  std::vector<FunctionParameter>& get_parameters();
 };
+
 #endif

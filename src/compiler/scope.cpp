@@ -1,27 +1,32 @@
 #include <string>
-#include <optional>
 
 #include "scope.hpp"
 #include "symbol_entry.hpp"
 #include "types.hpp"
 
-Scope::Scope() {}
+void Scope::insert(std::string label) {
+  this->labels.insert(label);
+}
 
-int Scope::get_size() const {
-  return this->locals.size();
+bool Scope::has_label(std::string label) {
+  auto it = this->labels.find(label);
+  if (it != this->labels.end())
+    return true;
+  else
+    return false;
 }
 
 void Scope::insert(std::string name, std::shared_ptr<Entry> entry) {
-  auto it = this->locals.find(name);
-  if (it != this->locals.end())
+  auto it = this->entries.find(name);
+  if (it != this->entries.end())
     std::cout << "Name \"" << name << "\" has already been declared" << std::endl;
-  this->locals[name] = entry;
+  this->entries[name] = entry;
 }
 
-std::optional<std::shared_ptr<Entry>> Scope::lookup(std::string name) {
-  auto it = this->locals.find(name);
-  if (it != this->locals.end())
-    return this->locals[name];
+std::shared_ptr<Entry> Scope::lookup(std::string name) {
+  auto it = this->entries.find(name);
+  if (it != this->entries.end())
+    return this->entries[name];
   else
-    return std::nullopt;
+    return nullptr;
 }

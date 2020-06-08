@@ -3,7 +3,6 @@
 
 #include <iostream>
 #include <memory>
-#include <optional>
 
 enum class BasicType {
   Integer,
@@ -25,7 +24,13 @@ public:
   TypeInfo(BasicType t, bool complete);
   virtual ~TypeInfo() = default;
 
+  BasicType get_basic_type();
+
+  bool is_complete();
   bool is(BasicType t);
+  bool same_type_as(std::shared_ptr<TypeInfo> t);
+  bool assignable_to(std::shared_ptr<TypeInfo> t);
+
   virtual void print(std::ostream& out) const = 0;
 };
 
@@ -71,13 +76,14 @@ public:
 
 // Incomplete array type
 class IArrType : public TypeInfo {
-  std::optional<int> size;
+  int size;
   std::shared_ptr<TypeInfo> subtype;
 
 public:
   IArrType(std::shared_ptr<TypeInfo> subtype);
 
   std::shared_ptr<TypeInfo> get_subtype();
+  void set_size(int size);
   void print(std::ostream& out) const override;
 };
 

@@ -353,6 +353,10 @@ class Formal : public Stmt {
 public:
   Formal(bool pass_by_reference, std::vector<std::string> names, std::shared_ptr<TypeInfo> type);
 
+  bool get_pass_by_reference();
+  std::vector<std::string>& get_names();
+  std::shared_ptr<TypeInfo> get_type();
+
   void print(std::ostream& out, int level) const override;
   void semantic() override;
   llvm::Value* codegen() const override;

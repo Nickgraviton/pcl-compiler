@@ -6,7 +6,7 @@
 #**********************************************************************
 
 CXX=clang++
-CXXFLAGS=-Wall $(shell llvm-config --cxxflags) -std=c++17
+CXXFLAGS=-Wall $(shell llvm-config --cxxflags)
 LDFLAGS=$(shell llvm-config --ldflags --libs all)
 RM=rm -f
 

@@ -34,7 +34,7 @@ using program_ptr = std::unique_ptr<Program>;
 using type_ptr = std::shared_ptr<TypeInfo>;
 
 //------------------------------------------------------------------//
-//---------------------------Constructors---------------------------//
+//--------------Constructors/Getters/Setters------------------------//
 //------------------------------------------------------------------//
 
 std::shared_ptr<TypeInfo> Expr::get_type() {
@@ -112,6 +112,18 @@ While::While(expr_ptr cond, stmt_ptr stmt)
 
 Formal::Formal(bool pass_by_reference, std::vector<std::string> names, type_ptr type)
   : pass_by_reference(pass_by_reference), names(names), type(type) {}
+
+bool Formal::get_pass_by_reference() {
+  return this->pass_by_reference;
+}
+
+std::vector<std::string>& Formal::get_names() {
+  return this->names;
+}
+
+std::shared_ptr<TypeInfo> Formal::get_type() {
+  return this->type;
+}
 
 Body::Body(std::vector<local_ptr> local_decls, block_ptr block)
   : local_decls(std::move(local_decls)), block(std::move(block)) {}
@@ -396,21 +408,21 @@ void Nil::semantic() {
   this->type = std::make_shared<PtrType>(nullptr);
 }
 
-// Helper function
-std::optional<Entry> lookup(std::string name) {
-  auto result = symbol_table.lookup(name);
-  if (!result)
-    std::cerr << "Error: Identifier " << name << " hasn't been declared" << std::endl;
-  return result;
-}
-
 void Variable::semantic() {
-  auto result = lookup(this->name);
- //ERROR this->type = result.value().get_type();
+  auto entry = symbol_table.lookup(this->name);
+  if (!entry)
+    std::cerr << "Error: Identifier " << this->name << " hasn't been declared" << std::endl;
+
+  auto variable_entry = std::dynamic_pointer_cast<VariableEntry>(entry);
+  if (!variable_entry)
+    std::cerr << "Error: Name \"" << this->name << "\" used in function definition" << std::endl;
+
+  this->type = variable_entry->get_type();
 }
 
 void Array::semantic() {
   this->arr->semantic();
+
   auto arr_type = this->arr->get_type();
   if (arr_type->is(BasicType::Array)) {
     std::shared_ptr<ArrType> a_t = std::static_pointer_cast<ArrType>(arr_type);
@@ -423,6 +435,7 @@ void Array::semantic() {
   }
 
   this->index->semantic();
+
   auto index_type = this->index->get_type();
   if (!index_type->is(BasicType::Integer))
     std::cerr << "Array index is not of integer type" << std::endl;
@@ -430,6 +443,7 @@ void Array::semantic() {
 
 void Deref::semantic() {
   this->var->semantic();
+
   auto var_type = this->var->get_type();
   if (var_type->is(BasicType::Pointer)) {
     std::shared_ptr<PtrType> p_t = std::static_pointer_cast<PtrType>(var_type);
@@ -441,106 +455,300 @@ void Deref::semantic() {
 
 void AddressOf::semantic() {
   this->var->semantic();
+
   auto var_type = this->var->get_type();
+
   this->type = std::make_shared<PtrType>(var_type);
 }
 
 void CallExpr::semantic() {
-  // Lookup function and set its return type as expr type
-  auto result = lookup(this->fun_name);
-  //ERRORthis->type = result.value().get_type();
+  auto entry = symbol_table.lookup(this->fun_name);
+  if (!entry)
+    std::cerr << "Error: Name of function not found" << std::endl;
 
-  //check if all the parameters have the correct type compared to the function definition
+  auto function_entry = std::dynamic_pointer_cast<FunctionEntry>(entry);
+  if (!function_entry)
+    std::cerr << "Error: Name \"" << this->fun_name << "\" used in variable definition" << std::endl;
+
+  this->type = function_entry->get_type();
+
+  for (auto& parameter : this->parameters)
+    parameter->semantic();
+
+  auto fun_parameters = function_entry->get_parameters();
+  int fun_param_count = fun_parameters.size();
+  int call_param_count = this->parameters.size();
+
+  if (call_param_count < fun_param_count) {
+    std::cerr << "Error: Not enough arguments provided for the call of function \"" << this->fun_name << "\"" << std::endl;
+  } else if (call_param_count > fun_param_count) {
+    std::cerr << "Error: Too many arguments provided for the call of function \"" << this->fun_name << "\"" << std::endl;
+  } else {
+    for (int i = 0; i < call_param_count; i++) {
+      auto call_param_type = this->parameters[i]->get_type();
+      auto fun_param_type = fun_parameters[i].get_type();
+      if (!call_param_type->assignable_to(fun_param_type))
+        std::cerr << "Type of argument in function call does not match function definition" << std::endl;
+    }
+  }
 }
 
 void Result::semantic() {
+  auto result = symbol_table.current_scope_lookup("result");
+  if (!result)
+    std::cerr << "Error: \"result\" variable not used within the body of a function that returns a result" << std::endl;
 
-  //check if inside a function and not a procedure
-  //set type as the function's return type
+  this->type = result->get_type();
 }
 
 void BinaryExpr::semantic() {
-  //check and possibly cast integers to real for arithmetic operations
-  //check if valid types for mod and div
-  //check if valid types for bool
+  this->left->semantic();
+  this->right->semantic();
+
+  auto left_type = this->left->get_type();
+  auto right_type = this->right->get_type();
+
+  if (this->op == "+" || this->op == "-" || this->op == "*") {
+    if (!left_type->is(BasicType::Integer) && !left_type->is(BasicType::Real))
+      std::cerr << "Error: + operands need to be either of real or integer type";
+
+    if (!right_type->is(BasicType::Integer) && !right_type->is(BasicType::Real))
+      std::cerr << "Error: + operands need to be either of real or integer type";
+
+    if (left_type->is(BasicType::Real) || right_type->is(BasicType::Real))
+      this->type = std::make_shared<RealType>();
+    else
+      this->type = std::make_shared<IntType>();
+  } else if (this->op == "/") {
+     if (!left_type->is(BasicType::Integer) && !left_type->is(BasicType::Real))
+      std::cerr << "Error: + operands need to be either of real or integer type";
+
+    if (!right_type->is(BasicType::Integer) && !right_type->is(BasicType::Real))
+      std::cerr << "Error: + operands need to be either of real or integer type";
+
+    this->type = std::make_shared<RealType>();
+  } else if (this->op == "div" || this->op == "mod") {
+    if (!left_type->is(BasicType::Integer) && !right_type->is(BasicType::Integer))
+      std::cerr << "Error: " << op << " operands need to be either of real or integer type";
+
+    this->type = std::make_shared<IntType>();
+  } else if (this->op == "=" || this->op == "<>") {
+    if (((!left_type->is(BasicType::Integer) && !left_type->is(BasicType::Real))
+          || (right_type->is(BasicType::Integer) && !right_type->is(BasicType::Real)))
+        && !left_type->same_type_as(right_type))
+      std::cerr << "Error: " << this->op << "needs either arithmetic types or variables of the same type" << std::endl;   
+
+    this->type = std::make_shared<BoolType>();
+  } else if (this->op == "<" || this->op == ">" || this->op == "<=" || this->op == ">=") {
+    if ((!left_type->is(BasicType::Integer) && !left_type->is(BasicType::Real))
+          || (right_type->is(BasicType::Integer) && !right_type->is(BasicType::Real)))
+      std::cerr << "Error: " << this->op << " needs arithmetic types" << std::endl;
+
+    this->type = std::make_shared<BoolType>();
+  } else if (this->op == "and" || this->op == "or") {
+    if (!left_type->is(BasicType::Boolean) && !right_type->is(BasicType::Boolean))
+      std::cerr << "Error: " << this->op << "operands need to be of boolean type" << std::endl;
+    
+    this->type = std::make_shared<BoolType>();
+  } else {
+    std::cerr << "Error: Unkown operator " << this->op << std::endl;
+  }
 }
 
 void UnaryOp::semantic() {
-  //check if not has bool
-  //check if plus and minus have arithmetic types and make result same type
+  auto operand_type = this->operand->get_type();
+
+  if (this->op == "+" || this->op == "-")
+    if (!operand_type->is(BasicType::Integer) && !operand_type->is(BasicType::Real))
+      std::cerr << "Error: Operand needs to be integer or real" << std::endl;
+
+  if (this->op == "not")
+    if (!operand_type->is(BasicType::Boolean))
+      std::cerr << "Error: Operand needs to be boolean" << std::endl;
+
+  this->type = operand_type;
 }
 
 void Empty::semantic() {}
 
 void Block::semantic() {
-  for (auto& s : stmt_list)
-    s->semantic();
+  for (auto& stmt : this->stmt_list)
+    stmt->semantic();
 }
 
 void VarNames::semantic() {
-  //loop names vector and entries to symbol table
+  for (auto& name : this->names)
+    symbol_table.insert(name, std::make_shared<VariableEntry>(this->type));
 }
 
 void VarDecl::semantic() {
-  //loop var_names declarations and call semantic on each of them
+  for (auto& element : this->var_names)
+    element->semantic();
 }
 
 void LabelDecl::semantic() {
-  //loop names vector andd labels to symbol table
+  for (auto& name : this->names)
+    symbol_table.insert(name);
 }
 
 void VarAssign::semantic() {
-  //check if assignment is possible
+  this->right->semantic();
+  this->left->semantic();
+
+  auto right_type = this->right->get_type();
+  auto left_type = this->left->get_type();
+  if (!right_type->assignable_to(left_type))
+    std::cerr << "Error: Value cannot be assigned due to type mismatch" << std::endl;
 }
 
 void Goto::semantic() {
-  //check if label has been delcared
+  if (!symbol_table.has_label(this->label))
+    std::cerr << "Error: Label \"" << this->label << "\" hasn't been declared" << std::endl;
 }
 
 void Label::semantic() {
-  //check if label has been declared
-  //call semantic on statement
+  if (!symbol_table.has_label(this->label))
+    std::cerr << "Error: Label \"" << this->label << "\" hasn't been declared" << std::endl;
+
+  this->stmt->semantic();
 }
 
 void If::semantic() {
-  //check if condition is bool
-  //call semantic on if and on else if it exsists
+  this->cond->semantic();
+
+  auto condition_type = this->cond->get_type();
+  if (!condition_type->is(BasicType::Boolean))
+    std::cerr << "Condition of if statement is not a boolean expression" << std::endl;
+
+  this->if_stmt->semantic();
+
+  if (this->else_stmt)
+    this->else_stmt->semantic();
 }
 
 void While::semantic() {
-  //check if condition is bool
-  //call semantic on block
+  this->cond->semantic();
+
+  auto condition_type = this->cond->get_type();
+  if (!condition_type->is(BasicType::Boolean))
+    std::cerr << "Condition of while statement is not a boolean expression" << std::endl;
+
+  this->stmt->semantic();
 }
 
-void Formal::semantic() {
-
-}
+void Formal::semantic() {}
 
 void Body::semantic() {
+  for (auto& l : this->local_decls)
+    l->semantic();
+
+  this->block->semantic();
+}
+
+void Fun::semantic() {
   symbol_table.open_scope();
 
-  for (auto& l : local_decls)
-    l->semantic();
-  block->semantic();
+  auto fun_entry = std::make_shared<FunctionEntry>(this->return_type);
+
+  for (auto& formal : this->formal_parameters) {
+    for (auto& name : formal->get_names()) {
+      fun_entry->add_parameter(FunctionParameter(formal->get_pass_by_reference(), formal->get_type()));
+      symbol_table.insert(name, std::make_shared<VariableEntry>(formal->get_type()));
+    }
+  }
+
+  symbol_table.insert(this->fun_name, fun_entry);
+  symbol_table.insert("result", std::make_shared<VariableEntry>(this->return_type));
+
+  if(!this->is_forward)
+    this->body->semantic();
 
   symbol_table.close_scope();
 }
 
-void Fun::semantic() {}
-
 void CallStmt::semantic() {
-//check if all the parameters have the correct type compared to the function definition
+  auto entry = symbol_table.lookup(this->fun_name);
+  if (!entry)
+    std::cerr << "Error: Name of function not found" << std::endl;
 
+  auto function_entry = std::dynamic_pointer_cast<FunctionEntry>(entry);
+  if (!function_entry)
+    std::cerr << "Error: Name \"" << this->fun_name << "\" used in variable definition" << std::endl;
+
+  for (auto& parameter : this->parameters)
+    parameter->semantic();
+
+  auto fun_parameters = function_entry->get_parameters();
+  int fun_param_count = fun_parameters.size();
+  int call_param_count = this->parameters.size();
+
+  if (call_param_count < fun_param_count) {
+    std::cerr << "Error: Not enough arguments provided for the call of function \"" << this->fun_name << "\"" << std::endl;
+  } else if (call_param_count > fun_param_count) {
+    std::cerr << "Error: Too many arguments provided for the call of function \"" << this->fun_name << "\"" << std::endl;
+  } else {
+    for (int i = 0; i < call_param_count; i++) {
+      auto call_param_type = this->parameters[i]->get_type();
+      auto fun_param_type = fun_parameters[i].get_type();
+      if (!call_param_type->assignable_to(fun_param_type))
+        std::cerr << "Type of argument in function call does not match function definition" << std::endl;
+    }
+  }
 }
 
 void Return::semantic() {}
 
-void New::semantic() {}
+void New::semantic() {
+  size->semantic();
+  l_value->semantic();
 
-void Dispose::semantic() {}
+  auto l_value_type = l_value->get_type();
+  if(!l_value_type->is(BasicType::Pointer)) {
+    std::cerr << "Error: Using new requires an l value of pointer type" << std::endl;
+  } else {
+    auto ptr_type = std::static_pointer_cast<PtrType>(l_value_type);
+    auto subtype = ptr_type->get_subtype();
+
+    if(this->size) {
+      if (!subtype->is(BasicType::IArray))
+        std::cerr << "Error: Using new with a size argument requires a pointer to array type" << std::endl;
+      
+      auto size_type = size->get_type();
+      if (!size_type->is(BasicType::Integer))
+        std::cerr << "Error: Expression within brackets needs to be of integer type" << std::endl;
+    } else {
+      if (!subtype->is_complete())
+        std::cerr << "Error: Using new without a size argument requires a complete type" << std::endl;
+    }
+  }
+}
+
+void Dispose::semantic() {
+  l_value->semantic();
+
+  auto l_value_type = l_value->get_type();
+  if(!l_value_type->is(BasicType::Pointer)) {
+    std::cerr << "Error: Using delete requires an l value of pointer type" << std::endl;
+  } else {
+    auto ptr_type = std::static_pointer_cast<PtrType>(l_value_type);
+    auto subtype = ptr_type->get_subtype();
+
+    if(this->has_brackets) {
+      if (!subtype->is(BasicType::IArray))
+        std::cerr << "Error: Using new with a size argument requires a pointer to array type" << std::endl;
+    } else {
+      if (!subtype->is_complete())
+        std::cerr << "Error: Using new without a size argument requires a complete type" << std::endl;
+    }
+  }
+}
 
 void Program::semantic() {
-  //call semantic on class variables
+  symbol_table.open_scope();
+
+  this->body->semantic();
+
+  symbol_table.close_scope();
 }
 
 //------------------------------------------------------------------//

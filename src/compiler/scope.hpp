@@ -3,21 +3,22 @@
 
 #include <map>
 #include <memory>
-#include <optional>
+#include <set>
 #include <string>
 
 class Entry;
 class TypeInfo;
 
 class Scope {
-  std::map<std::string, std::shared_ptr<Entry>> locals;
+  std::set<std::string> labels;
+  std::map<std::string, std::shared_ptr<Entry>> entries;
 
 public:
-  Scope();
+  void insert(std::string label);
+  bool has_label(std::string label);
 
-  int get_size() const;
   void insert(std::string name, std::shared_ptr<Entry> entry);
-  std::optional<std::shared_ptr<Entry>> lookup(std::string name);
+  std::shared_ptr<Entry> lookup(std::string name);
 };
 
 #endif
