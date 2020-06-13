@@ -4,6 +4,33 @@
 #include <iostream>
 #include <memory>
 
+enum class UnOp {
+  NOT,
+  MINUS,
+  PLUS
+};
+
+std::string unop_to_string(UnOp op);
+
+enum class BinOp {
+  PLUS,
+  MINUS,
+  MUL,
+  DIV,
+  INT_DIV,
+  MOD,
+  OR,
+  AND,
+  EQ,
+  NE,
+  LT,
+  LE,
+  GT,
+  GE
+};
+
+std::string binop_to_string(BinOp op);
+
 enum class BasicType {
   Integer,
   Real,
@@ -28,9 +55,7 @@ public:
 
   bool is_complete();
   bool is(BasicType t);
-  bool same_type_as(std::shared_ptr<TypeInfo> t);
-  bool assignable_to(std::shared_ptr<TypeInfo> t);
-
+  
   virtual void print(std::ostream& out) const = 0;
 };
 
@@ -97,5 +122,8 @@ public:
   std::shared_ptr<TypeInfo> get_subtype();
   void print(std::ostream& out) const override;
 };
+
+bool same_type(std::shared_ptr<TypeInfo> left, std::shared_ptr<TypeInfo> right);
+bool compatible_types(std::shared_ptr<TypeInfo> left, std::shared_ptr<TypeInfo> right);
 
 #endif

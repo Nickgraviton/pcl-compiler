@@ -10,11 +10,11 @@
 
 #include "ast.hpp"
 #include "lexer.hpp"
+#include "types.hpp"
 #include "parser.hpp"
 
 #define YY_DECL yy::parser::symbol_type yylex()
 
-void lexer_error(const std::string& msg);
 int line_num = 1;
 %}
 
@@ -62,10 +62,10 @@ SINGLE_CHARACTER {PRINTABLE}|{ESCAPE_SEQ}
 "var"       return yy::parser::make_VAR();
 "while"     return yy::parser::make_WHILE();
 
-"="         return yy::parser::make_EQUAL();
+"="         return yy::parser::make_EQ();
 ">"         return yy::parser::make_GT();
 "<"         return yy::parser::make_LT();
-"<>"        return yy::parser::make_NOT_EQUAL();
+"<>"        return yy::parser::make_NE();
 ">="        return yy::parser::make_GE();
 "<="        return yy::parser::make_LE();
 "+"         return yy::parser::make_PLUS();
@@ -97,7 +97,7 @@ SINGLE_CHARACTER {PRINTABLE}|{ESCAPE_SEQ}
 <COMMENT>"*)"    BEGIN(INITIAL);
 <COMMENT>\n      ++line_num;
 <COMMENT>"*"     /* nothing */
-<COMMENT>[^*]+   /* nothing */
+<COMMENT>[^*\n]+ /* nothing */
 <COMMENT><<EOF>> { std::stringstream ss;
                    ss << "Unexpected end of file within comment section";
                    lexer_error(ss.str());

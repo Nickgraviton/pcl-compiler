@@ -92,6 +92,50 @@ void PtrType::print(std::ostream& out) const {
 //-----------------------------Misc---------------------------------//
 //------------------------------------------------------------------//
 
+std::string unop_to_string(UnOp op) {
+  switch(op) {
+    case UnOp::NOT:
+      return "not";
+    case UnOp::MINUS:
+      return "-";
+    case UnOp::PLUS:
+      return "+";
+  }
+}
+
+std::string binop_to_string(BinOp op) {
+  switch(op) {
+    case BinOp::PLUS:
+      return "+";
+    case BinOp::MINUS:
+      return "-";
+    case BinOp::MUL:
+      return "*";
+    case BinOp::DIV:
+      return "/";
+    case BinOp::INT_DIV:
+      return "div";
+    case BinOp::MOD:
+      return "mod";
+    case BinOp::OR:
+      return "or";
+    case BinOp::AND:
+      return "and";
+    case BinOp::EQ:
+      return "=";
+    case BinOp::NE:
+      return "<>";
+    case BinOp::LT:
+      return "<";
+    case BinOp::LE:
+      return "<=";
+    case BinOp::GT:
+      return ">";
+    case BinOp::GE:
+      return ">=";
+  }
+}
+
 bool TypeInfo::is_complete() {
   return this->complete;
 }
@@ -100,17 +144,72 @@ bool TypeInfo::is(BasicType t) {
   return this->t == t;
 }
 
-bool TypeInfo::same_type_as(type_ptr t) {
-  if (this->t != t->get_basic_type()) {
+bool same_type(type_ptr left, type_ptr right) {
+  auto left_basic_type = left->get_basic_type();
+  auto right_basic_type = right->get_basic_type();
+
+  if (left_basic_type != right_basic_type) {
     return false;
-  } else if (this->t == BasicType::Array || this->t == BasicType::IArray) {
+  } else if (left_basic_type == BasicType::Array || left_basic_type == BasicType::IArray) {
     return false;
   } else {
     return true;
   }
 }
 
-bool TypeInfo::assignable_to(type_ptr t) {
-  return true;
-  // NEEDS TO BE IMPLEMENTED
+bool compatible_types(type_ptr left, type_ptr right) {
+  auto left_basic_type = left->get_basic_type();
+  auto right_basic_type = right->get_basic_type();
+
+  if (left_basic_type != right_basic_type) {
+    if (left_basic_type == BasicType::Real && right_basic_type == BasicType::Integer) {
+      // Integer can be assigned to real
+
+      return true;
+    } else if (left_basic_type == BasicType::IArray && right_basic_type == BasicType::Array) {
+      // Arrays can be assigned to incomplete arrays
+
+      auto left_arr_type = std::static_pointer_cast<IArrType>(left);
+      auto right_arr_type = std::static_pointer_cast<IArrType>(right);
+
+      auto left_subtype = left_arr_type->get_subtype();
+      auto right_subtype = right_arr_type->get_subtype();
+
+      return compatible_types(left_subtype, right_subtype);
+    } else {
+      // Any two other different types cannot be assigned to each other
+
+      return false;
+    }
+  } else if (left_basic_type == BasicType::Array) {
+    auto left_arr_type = std::static_pointer_cast<ArrType>(left);
+    auto right_arr_type = std::static_pointer_cast<ArrType>(right);
+
+    auto left_subtype = left_arr_type->get_subtype();
+    auto right_subtype = right_arr_type->get_subtype();
+
+    return compatible_types(left_subtype, right_subtype);
+  } else if (left_basic_type == BasicType::IArray) {
+    auto left_iarr_type = std::static_pointer_cast<IArrType>(left);
+    auto right_iarr_type = std::static_pointer_cast<IArrType>(right);
+
+    auto left_subtype = left_iarr_type->get_subtype();
+    auto right_subtype = right_iarr_type->get_subtype();
+
+    return compatible_types(left_subtype, right_subtype);
+  } else if (left_basic_type == BasicType::Pointer) {
+    auto left_ptr_type = std::static_pointer_cast<PtrType>(left);
+    auto right_ptr_type = std::static_pointer_cast<PtrType>(right);
+
+    auto left_subtype = left_ptr_type->get_subtype();
+    auto right_subtype = right_ptr_type->get_subtype();
+
+    // Nil pointer can be assigned to any type of pointer
+    if (!right_subtype)
+      return true;
+
+    return compatible_types(left_subtype, right_subtype);
+  } else {
+    return true;
+  }
 }

@@ -7,11 +7,19 @@
 
 #include <llvm/IR/Value.h>
 
+enum class UnOp;
+enum class BinOp;
+
 class TypeInfo;
 
 class Node {
+  int line;
+
 public:
+  Node();
   virtual ~Node() = default;
+
+  int get_line();
   virtual void print(std::ostream& out, int level) const = 0;
   virtual void semantic() = 0;
   virtual llvm::Value* codegen() const = 0;
@@ -22,10 +30,15 @@ protected:
   std::shared_ptr<TypeInfo> type;
 
 public:
+  Expr();
+
   std::shared_ptr<TypeInfo> get_type();
 };
 
-class Stmt : public Node {};
+class Stmt : public Node {
+public:
+  Stmt();
+};
 
 //------------------------------------------------------------//
 //--------------------Constant expressions--------------------//
@@ -189,11 +202,11 @@ public:
 
 // Binary expression using arithmetic, comparison or logical operators
 class BinaryExpr : public Expr {
-  std::string op;
+  BinOp op;
   std::unique_ptr<Expr> left, right;
 
 public:
-  BinaryExpr(std::string op, std::unique_ptr<Expr> left, std::unique_ptr<Expr> right);
+  BinaryExpr(BinOp op, std::unique_ptr<Expr> left, std::unique_ptr<Expr> right);
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
@@ -201,12 +214,12 @@ public:
 };
 
 // Unary operator one of: not, +, -
-class UnaryOp : public Expr {
-  std::string op;
+class UnaryExpr : public Expr {
+  UnOp op;
   std::unique_ptr<Expr> operand;
 
 public:
-  UnaryOp(std::string op, std::unique_ptr<Expr> operand);
+  UnaryExpr(UnOp op, std::unique_ptr<Expr> operand);
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
@@ -218,7 +231,10 @@ public:
 //------------------------------------------------------------//
 
 // Superclass of local declarations
-class Local : public Stmt {};
+class Local : public Stmt {
+public:
+  Local();
+};
 
 // Empty statement
 class Empty : public Stmt {
@@ -383,13 +399,13 @@ class Fun : public Local {
   std::vector<std::unique_ptr<Formal>> formal_parameters;
 
   std::unique_ptr<Body> body;
-  bool is_forward;
+  bool forward_declaration;
 
 public:
   Fun(std::string fun_name, std::shared_ptr<TypeInfo> return_type, std::vector<std::unique_ptr<Formal>> formal_parameters);
 
   void set_body(std::unique_ptr<Body> body);
-  void set_forward(bool is_forward);
+  void set_forward(bool forward_declaration);
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;

@@ -5,8 +5,8 @@
 
 #include "ast.hpp"
 #include "lexer.hpp"
-#include "parser.hpp"
 #include "types.hpp"
+#include "parser.hpp"
 
 std::unique_ptr<Program> root;
 extern yy::parser::symbol_type yylex();
@@ -35,10 +35,10 @@ extern yy::parser::symbol_type yylex();
 %token              TRUE FALSE NIL
 
 %token              PLUS MINUS MUL DIV INT_DIV MOD
-%token              EQUAL NOT_EQUAL GT LT GE LE
+%token              EQ NE GT LT GE LE
 %token              OP_PAR CLOS_PAR OP_BRACK CLOS_BRACK
 
-%left               EQUAL NOT_EQUAL GT LT GE LE
+%left               EQ NE GT LT GE LE
 %left               PLUS MINUS OR
 %left               MUL DIV INT_DIV MOD AND
 %nonassoc           NOT CARET UNOP R_VAL AT
@@ -60,8 +60,8 @@ extern yy::parser::symbol_type yylex();
 %type<std::vector<std::unique_ptr<VarNames>>> next_var
 %type<std::vector<std::string>>               next_id
 
-%type<bool>        optional_var optional_bracket
-%type<std::string> unop
+%type<bool> optional_var optional_bracket
+%type<UnOp> unop
 
 %expect 1
 
@@ -189,21 +189,21 @@ r_value:
 | AT expr                           { $$ = std::make_unique<AddressOf>(std::move($2));                        }
   /* Correct rule is `AT l_value` but l_value creates reduce/reduce
      conflict and since r_value is nonassoc we can just leave this as expr*/
-| unop expr %prec UNOP              { $$ = std::make_unique<UnaryOp>($1, std::move($2));                      }
-| expr PLUS expr                    { $$ = std::make_unique<BinaryExpr>("+", std::move($1), std::move($3));   }
-| expr MINUS expr                   { $$ = std::make_unique<BinaryExpr>("-", std::move($1), std::move($3));   }
-| expr MUL expr                     { $$ = std::make_unique<BinaryExpr>("*", std::move($1), std::move($3));   }
-| expr DIV expr                     { $$ = std::make_unique<BinaryExpr>("/", std::move($1), std::move($3));   }
-| expr INT_DIV expr                 { $$ = std::make_unique<BinaryExpr>("div", std::move($1), std::move($3)); }
-| expr MOD expr                     { $$ = std::make_unique<BinaryExpr>("mod", std::move($1), std::move($3)); }
-| expr OR expr                      { $$ = std::make_unique<BinaryExpr>("or", std::move($1), std::move($3));  }
-| expr AND expr                     { $$ = std::make_unique<BinaryExpr>("and", std::move($1), std::move($3)); }
-| expr EQUAL expr                   { $$ = std::make_unique<BinaryExpr>("=", std::move($1), std::move($3));   }
-| expr NOT_EQUAL expr               { $$ = std::make_unique<BinaryExpr>("<>", std::move($1), std::move($3));  }
-| expr LT expr                      { $$ = std::make_unique<BinaryExpr>("<", std::move($1), std::move($3));   }
-| expr LE expr                      { $$ = std::make_unique<BinaryExpr>("<=", std::move($1), std::move($3));  }
-| expr GT expr                      { $$ = std::make_unique<BinaryExpr>(">", std::move($1), std::move($3));   }
-| expr GE expr                      { $$ = std::make_unique<BinaryExpr>(">=", std::move($1), std::move($3));  }
+| unop expr %prec UNOP { $$ = std::make_unique<UnaryExpr>($1, std::move($2));                             }
+| expr PLUS expr       { $$ = std::make_unique<BinaryExpr>(BinOp::PLUS, std::move($1), std::move($3));    }
+| expr MINUS expr      { $$ = std::make_unique<BinaryExpr>(BinOp::MINUS, std::move($1), std::move($3));   }
+| expr MUL expr        { $$ = std::make_unique<BinaryExpr>(BinOp::MUL, std::move($1), std::move($3));     }
+| expr DIV expr        { $$ = std::make_unique<BinaryExpr>(BinOp::DIV, std::move($1), std::move($3));     }
+| expr INT_DIV expr    { $$ = std::make_unique<BinaryExpr>(BinOp::INT_DIV, std::move($1), std::move($3)); }
+| expr MOD expr        { $$ = std::make_unique<BinaryExpr>(BinOp::MOD, std::move($1), std::move($3));     }
+| expr OR expr         { $$ = std::make_unique<BinaryExpr>(BinOp::OR, std::move($1), std::move($3));      }
+| expr AND expr        { $$ = std::make_unique<BinaryExpr>(BinOp::AND, std::move($1), std::move($3));     }
+| expr EQ expr         { $$ = std::make_unique<BinaryExpr>(BinOp::EQ, std::move($1), std::move($3));      }
+| expr NE expr         { $$ = std::make_unique<BinaryExpr>(BinOp::NE, std::move($1), std::move($3));      }
+| expr LT expr         { $$ = std::make_unique<BinaryExpr>(BinOp::LT, std::move($1), std::move($3));      }
+| expr LE expr         { $$ = std::make_unique<BinaryExpr>(BinOp::LE, std::move($1), std::move($3));      }
+| expr GT expr         { $$ = std::make_unique<BinaryExpr>(BinOp::GT, std::move($1), std::move($3));      }
+| expr GE expr         { $$ = std::make_unique<BinaryExpr>(BinOp::GE, std::move($1), std::move($3));      }
 ;
 
 next_parameter:
@@ -213,9 +213,9 @@ next_parameter:
 ;
 
 unop:
-  NOT   { $$ = "not"; }
-| PLUS  { $$ = "-";   }
-| MINUS { $$ = "+";   }
+  NOT   { $$ = UnOp::NOT;   }
+| PLUS  { $$ = UnOp::MINUS; }
+| MINUS { $$ = UnOp::PLUS;  }
 ;
 
 %%

@@ -32,13 +32,15 @@ public:
 };
 
 class FunctionEntry : public Entry {
+  bool forward_declaration;
   std::vector<FunctionParameter> parameters;
 
 public:
-  FunctionEntry(std::shared_ptr<TypeInfo> type);
+  FunctionEntry(bool is_forward, std::shared_ptr<TypeInfo> type);
 
   void add_parameter(FunctionParameter parameter);
   std::vector<FunctionParameter>& get_parameters();
+  bool is_forward();
 };
 
 #endif

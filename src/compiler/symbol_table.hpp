@@ -15,10 +15,10 @@ public:
   void open_scope();
   void close_scope();
 
-  void insert(std::string label);
+  bool insert(std::string label);
   bool has_label(std::string label);
 
-  void insert(std::string name, std::shared_ptr<Entry> entry);
+  bool insert(std::string name, std::shared_ptr<Entry> entry);
   std::shared_ptr<Entry> lookup(std::string name);
   std::shared_ptr<Entry> current_scope_lookup(std::string name);
 };

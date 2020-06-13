@@ -14,10 +14,10 @@ class Scope {
   std::map<std::string, std::shared_ptr<Entry>> entries;
 
 public:
-  void insert(std::string label);
+  bool insert(std::string label);
   bool has_label(std::string label);
 
-  void insert(std::string name, std::shared_ptr<Entry> entry);
+  bool insert(std::string name, std::shared_ptr<Entry> entry);
   std::shared_ptr<Entry> lookup(std::string name);
 };
 

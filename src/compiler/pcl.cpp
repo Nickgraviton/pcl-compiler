@@ -12,6 +12,7 @@ int main() {
   if (result == 0) {
     root->print(std::cout, 0);
     std::cout << "Parsing successful." << std::endl;
+    root->semantic();
   }
   return result;
 }

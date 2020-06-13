@@ -18,7 +18,7 @@ pcl: lexer.o parser.o ast.o types.o pcl.o symbol_table.o scope.o symbol_entry.o
 pcl.o: parser.cpp
 
 lexer.cpp: lexer.l parser.cpp
-	flex -s -t $< > $@
+	flex -s -o $@ $<
 
 parser.hpp parser.cpp: parser.y
 	bison -dv -o parser.cpp $<

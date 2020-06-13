@@ -4,8 +4,16 @@
 #include "symbol_entry.hpp"
 #include "types.hpp"
 
-void Scope::insert(std::string label) {
-  this->labels.insert(label);
+using entry_ptr = std::shared_ptr<Entry>;
+
+bool Scope::insert(std::string label) {
+  auto it = this->labels.find(label);
+  if (it != this->labels.end()) {
+    return false;
+  } else {
+    this->labels.insert(label);
+    return true;
+  }
 }
 
 bool Scope::has_label(std::string label) {
@@ -16,14 +24,17 @@ bool Scope::has_label(std::string label) {
     return false;
 }
 
-void Scope::insert(std::string name, std::shared_ptr<Entry> entry) {
+bool Scope::insert(std::string name, entry_ptr entry) {
   auto it = this->entries.find(name);
-  if (it != this->entries.end())
-    std::cout << "Name \"" << name << "\" has already been declared" << std::endl;
-  this->entries[name] = entry;
+  if (it != this->entries.end()) {
+    return false;
+  } else {
+    this->entries[name] = entry;
+    return true;
+  }
 }
 
-std::shared_ptr<Entry> Scope::lookup(std::string name) {
+entry_ptr Scope::lookup(std::string name) {
   auto it = this->entries.find(name);
   if (it != this->entries.end())
     return this->entries[name];
