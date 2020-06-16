@@ -16,6 +16,8 @@
 #define YY_DECL yy::parser::symbol_type yylex()
 
 int line_num = 1;
+
+static void lexer_error(const std::string& msg);
 %}
 
 ALPHA            [a-zA-Z]

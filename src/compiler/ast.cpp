@@ -1,8 +1,8 @@
 #include <iostream>
 #include <memory>
-#include <optional>
 #include <string>
 
+#include <llvm/IR/Instructions.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/Module.h>
@@ -14,19 +14,12 @@
 #include <llvm/Transforms/Utils.h>
 
 #include "ast.hpp"
+#include "codegen_map.hpp"
 #include "lexer.hpp"
 #include "scope.hpp"
 #include "symbol_entry.hpp"
 #include "symbol_table.hpp"
 #include "types.hpp"
-
-using namespace llvm;
-
-static LLVMContext TheContext;
-static IRBuilder<> Builder(TheContext);
-static std::unique_ptr<Module> TheModule;
-static std::unique_ptr<legacy::FunctionPassManager> TheFPM;
-static SymbolTable symbol_table;
 
 using expr_ptr = std::unique_ptr<Expr>;
 using stmt_ptr = std::unique_ptr<Stmt>;
@@ -39,9 +32,20 @@ using fun_ptr = std::unique_ptr<Fun>;
 using program_ptr = std::unique_ptr<Program>;
 using type_ptr = std::shared_ptr<TypeInfo>;
 
-//------------------------------------------------------------------//
-//--------------Constructors/Getters/Setters------------------------//
-//------------------------------------------------------------------//
+static SymbolTable symbol_table;
+
+using namespace llvm;
+
+static LLVMContext TheContext;
+static IRBuilder<> Builder(TheContext);
+static std::unique_ptr<Module> TheModule;
+static std::unique_ptr<legacy::FunctionPassManager> TheFPM;
+static CodegenMap var_map;
+static std::map<std::string, BasicBlock*> label_map;
+
+//---------------------------------------------------------------------//
+//------------------Constructors/Getters/Setters-----------------------//
+//---------------------------------------------------------------------//
 
 Node::Node() {
   this->line = line_num;
@@ -180,9 +184,9 @@ Dispose::Dispose(bool has_brackets, expr_ptr l_value)
 Program::Program(std::string name, body_ptr body)
   : Stmt(), name(name), body(std::move(body)) {}
 
-//------------------------------------------------------------------//
-//------------------------------Print-------------------------------//
-//------------------------------------------------------------------//
+//---------------------------------------------------------------------//
+//----------------------------Print------------------------------------//
+//---------------------------------------------------------------------//
 
 // Helper function that prints indent levels for the AST
 void print_level(std::ostream& out, int level) {
@@ -407,9 +411,10 @@ void Program::print(std::ostream& out, int level) const {
   this->body->print(out, level + 1);
 }
 
-//------------------------------------------------------------------//
-//----------------------------Semantic------------------------------//
-//------------------------------------------------------------------//
+
+//---------------------------------------------------------------------//
+//---------------------------Semantic----------------------------------//
+//---------------------------------------------------------------------//
 
 // Helper error function
 void error(const std::string& msg, const int& line) {
@@ -517,7 +522,7 @@ type_ptr call_semantic(std::string fun_name, std::vector<expr_ptr>& parameters, 
   } else {
     for (int i = 0; i < call_param_count; i++) {
       auto call_param_type = parameters[i]->get_type();
-      auto fun_param_type = fun_parameters[i].get_type();
+      auto fun_param_type = fun_parameters[i]->get_type();
       if (!compatible_types(fun_param_type, call_param_type))
         error("Type of argument in function call does not match function definition", line);
     }
@@ -545,7 +550,7 @@ void BinaryExpr::semantic() {
   auto left_type = this->left->get_type();
   auto right_type = this->right->get_type();
 
-  switch(op) {
+  switch(this->op) {
     case BinOp::PLUS:
     case BinOp::MINUS:
     case BinOp::MUL:
@@ -584,7 +589,7 @@ void BinaryExpr::semantic() {
       // Check if both operands are integers and set the expression's type
       // to integer
 
-      if (!left_type->is(BasicType::Integer) && !right_type->is(BasicType::Integer))
+      if (!left_type->is(BasicType::Integer) || !right_type->is(BasicType::Integer))
         error(binop_to_string(this->op) + " operands need to be of integer type", this->get_line());
 
       this->type = std::make_shared<IntType>();
@@ -623,7 +628,7 @@ void BinaryExpr::semantic() {
    case BinOp::OR:
       // Check if both operands are booleans and set the expression's type to boolean
 
-      if (!left_type->is(BasicType::Boolean) && !right_type->is(BasicType::Boolean))
+      if (!left_type->is(BasicType::Boolean) || !right_type->is(BasicType::Boolean))
         error(binop_to_string(this->op) + " operands need to be of boolean type", this->get_line());
       
       this->type = std::make_shared<BoolType>();
@@ -641,23 +646,23 @@ void UnaryExpr::semantic() {
 
   auto operand_type = this->operand->get_type();
 
-  switch(op) {
+  switch(this->op) {
     case UnOp::PLUS:
     case UnOp::MINUS:
       if (!operand_type->is(BasicType::Integer) && !operand_type->is(BasicType::Real))
-        error("Operand needs to be integer or real", this->get_line());
+        error(unop_to_string(this->op) + " operand needs to be integer or real", this->get_line());
 
       break;
 
     case UnOp::NOT:
       if (!operand_type->is(BasicType::Boolean))
-        error("Operand needs to be boolean", this->get_line());
+        error(unop_to_string(this->op) + " operand needs to be boolean", this->get_line());
 
       break;
 
     default:
       // Won't be reached
-      error("Unkown binary operator", this->get_line());
+      error("Unkown unary operator", this->get_line());
   }
 
   this->type = operand_type;
@@ -697,6 +702,7 @@ void VarAssign::semantic() {
 
   auto right_type = this->right->get_type();
   auto left_type = this->left->get_type();
+
   if (!compatible_types(left_type, right_type))
     error("Value cannot be assigned due to type mismatch", this->get_line());
 }
@@ -764,7 +770,7 @@ void Fun::semantic() {
 
   for (auto& formal : this->formal_parameters) {
     for (auto& name : formal->get_names()) {
-      fun_entry->add_parameter(FunctionParameter(formal->get_pass_by_reference(), formal->get_type()));
+      fun_entry->add_parameter(std::make_shared<VariableEntry>(formal->get_type()));
     }
   }
 
@@ -777,11 +783,9 @@ void Fun::semantic() {
   if (!this->forward_declaration) {
     symbol_table.open_scope();
 
-    for (auto& formal : this->formal_parameters) {
-      for (auto& name : formal->get_names()) {
+    for (auto& formal : this->formal_parameters)
+      for (auto& name : formal->get_names())
         symbol_table.insert(name, std::make_shared<VariableEntry>(formal->get_type()));
-      }
-    }
 
     if (this->return_type)
       symbol_table.insert("result", std::make_shared<VariableEntry>(this->return_type));
@@ -851,48 +855,115 @@ void Program::semantic() {
   symbol_table.close_scope();
 }
 
-//------------------------------------------------------------------//
-//-----------------------------Codegen------------------------------//
-//------------------------------------------------------------------//
+//---------------------------------------------------------------------//
+//----------------------------Util-------------------------------------//
+//---------------------------------------------------------------------//
+
+// Type shortcuts for:
+// char,bool: i8  (1 byte)
+// integer:   i32 (4 bytes)
+// real:      i80 (10 bytes)
+static Type* i8 = Type::getInt8Ty(TheContext);
+static Type* i32 = Type::getInt32Ty(TheContext);
+static Type* i80 = Type::getX86_FP80Ty(TheContext);
+
+static ConstantInt* c8(bool b) {
+  return ConstantInt::get(TheContext, APInt(8, b, true));
+}
+
+static ConstantInt* c8(char c) {
+  return ConstantInt::get(TheContext, APInt(8, c, true));
+}
+
+static ConstantInt* c32(int n) {
+  return ConstantInt::get(TheContext, APInt(32, n, true));
+}
+
+static ConstantFP* c80(double d) {
+  return ConstantFP::get(TheContext, APFloat(d));
+}
+
+static Type* to_llvm_type(std::shared_ptr<TypeInfo> type) {
+  switch(type->get_basic_type()) {
+    case BasicType::Integer:
+      return i32;
+    case BasicType::Real:
+      return i80;
+    case BasicType::Boolean:
+      return i8;
+    case BasicType::Char:
+      return i8;
+    case BasicType::Array:
+    {
+      auto array = std::static_pointer_cast<ArrType>(type);
+      return ArrayType::get(to_llvm_type(array->get_subtype()), array->get_size());
+    }
+    case BasicType::IArray:
+    {
+      auto iarray = std::static_pointer_cast<IArrType>(type);
+      return to_llvm_type(iarray->get_subtype());
+    }
+    case BasicType::Pointer:
+    {
+      auto ptr = std::static_pointer_cast<PtrType>(type);
+      return to_llvm_type(ptr->get_subtype())->getPointerTo();
+    }
+    default:
+      return nullptr;
+  }
+}
+
+//---------------------------------------------------------------------//
+//--------------------------Codegen------------------------------------//
+//---------------------------------------------------------------------//
 
 Value* Boolean::codegen() const {
-  return ConstantInt::get(TheContext, APInt(8, val, true));
+  return c8(this->val);
 }
 
 Value* Char::codegen() const {
-  return ConstantInt::get(TheContext, APInt(8, val, true));
+  return c8(this->val);
 }
 
 Value* Integer::codegen() const {
-  return ConstantInt::get(TheContext, APInt(16, val, true));
+  return c32(this->val);
 }
 
 Value* Real::codegen() const {
-  return ConstantFP::get(TheContext, APFloat(val));
+  return c80(this->val);
 }
 
 Value* String::codegen() const {
-  return nullptr;
+  return Builder.CreateGlobalStringPtr(this->val);
 }
 
 Value* Nil::codegen() const {
-  return nullptr;
+  auto ptr = std::static_pointer_cast<PtrType>(this->type);
+  auto subtype = ptr->get_subtype();
+  return ConstantPointerNull::get(to_llvm_type(subtype)->getPointerTo());
 }
 
 Value* Variable::codegen() const {
-  return nullptr;
+  return var_map.lookup(this->name);
 }
 
 Value* Array::codegen() const {
-  return nullptr;
+  Value* arr = this->arr->codegen();
+  Value* index = this->index->codegen();
+
+  Value* base_addr = Builder.CreateLoad(arr);
+  return Builder.CreateGEP(base_addr, index);
 }
 
 Value* Deref::codegen() const {
-  return nullptr;
+  return Builder.CreateLoad(this->var->codegen());
 }
 
 Value* AddressOf::codegen() const {
-  return nullptr;
+  Value* var = this->var->codegen();
+  AllocaInst* ptr = Builder.CreateAlloca(var->getType(), nullptr, "pointer");
+  Builder.CreateStore(var, ptr, false);
+  return ptr;
 }
 
 Value* CallExpr::codegen() const {
@@ -900,15 +971,154 @@ Value* CallExpr::codegen() const {
 }
 
 Value* Result::codegen() const {
-  return nullptr;
+  return var_map.lookup("result");
 }
 
 Value* BinaryExpr::codegen() const {
-  return nullptr;
+  Value* left = Builder.CreateLoad(this->left->codegen());
+  Value* right = Builder.CreateLoad(this->right->codegen());
+
+  auto left_type = this->left->get_type();
+  auto right_type = this->right->get_type();
+
+  if (left_type->is(BasicType::Integer)
+      && right_type->is(BasicType::Real))
+    left = Builder.CreateSIToFP(left, i80, "sitofp");
+
+  if (left_type->is(BasicType::Real)
+      && right_type->is(BasicType::Integer))
+    right = Builder.CreateSIToFP(right, i80, "sitofp");
+
+  switch(op) {
+    case BinOp::PLUS:
+      if (this->type->is(BasicType::Integer))
+        return Builder.CreateAdd(left, right, "add_int");
+      else
+        return Builder.CreateFAdd(left, right, "add_real");
+
+    case BinOp::MINUS:
+      if (this->type->is(BasicType::Integer))
+        return Builder.CreateSub(left, right, "sub_int");
+      else
+        return Builder.CreateFSub(left, right, "sub_real");
+
+    case BinOp::MUL:
+      if (this->type->is(BasicType::Integer))
+        return Builder.CreateMul(left, right, "mul_int");
+      else
+        return Builder.CreateFMul(left, right, "mul_real");
+
+    case BinOp::DIV:
+      if (left_type->is(BasicType::Integer))
+        left = Builder.CreateSIToFP(left, i80, "sitofp");
+
+      if (right_type->is(BasicType::Integer))
+        right = Builder.CreateSIToFP(right, i80, "sitofp");
+
+      return Builder.CreateFDiv(left, right, "div_real");
+
+    case BinOp::INT_DIV:
+      return Builder.CreateSDiv(left, right, "div_int");
+
+    case BinOp::MOD:
+      return Builder.CreateSRem(left, right, "mod_int");
+
+    case BinOp::EQ:
+    {
+      Value* cmp_res;
+      if(left_type->is(BasicType::Real))
+        cmp_res = Builder.CreateFCmpUEQ(left, right, "fcmp_eq");
+      else
+        cmp_res = Builder.CreateICmpEQ(left, right, "icmp_eq");
+
+      return Builder.CreateZExt(cmp_res, i8);
+    }
+
+    case BinOp::NE:
+    {
+      Value* cmp_res;
+      if(left_type->is(BasicType::Real))
+        cmp_res = Builder.CreateFCmpUNE(left, right, "fcmp_ne");
+      else
+        cmp_res = Builder.CreateICmpNE(left, right, "icmp_ne");
+
+      return Builder.CreateZExt(cmp_res, i8);
+    }
+
+    case BinOp::LT:
+    {
+      Value* cmp_res;
+      if(left_type->is(BasicType::Real))
+        cmp_res = Builder.CreateFCmpULT(left, right, "fcmp_lt");
+      else
+        cmp_res = Builder.CreateICmpSLT(left, right, "icmp_lt");
+
+      return Builder.CreateZExt(cmp_res, i8);
+    }
+
+    case BinOp::GT:
+    {
+      Value* cmp_res;
+      if(left_type->is(BasicType::Real))
+        cmp_res = Builder.CreateFCmpUGT(left, right, "fcmp_gt");
+      else
+        cmp_res = Builder.CreateICmpSGT(left, right, "icmp_gt");
+
+      return Builder.CreateZExt(cmp_res, i8);
+    }
+
+    case BinOp::LE:
+    {
+      Value* cmp_res;
+      if(left_type->is(BasicType::Real))
+        cmp_res = Builder.CreateFCmpULE(left, right, "fcmp_le");
+      else
+        cmp_res = Builder.CreateICmpSLE(left, right, "icmp_le");
+
+      return Builder.CreateZExt(cmp_res, i8);
+    }
+
+    case BinOp::GE:
+    {
+      Value* cmp_res;
+      if(left_type->is(BasicType::Real))
+        cmp_res = Builder.CreateFCmpUGE(left, right, "fcmp_ge");
+      else
+        cmp_res = Builder.CreateICmpSGE(left, right, "icmp_ge");
+
+      return Builder.CreateZExt(cmp_res, i8);
+    }
+
+    case BinOp::AND:
+      return Builder.CreateAnd(left, right, "and");
+
+    case BinOp::OR:
+      return Builder.CreateOr(left, right, "or");
+
+    default:
+      return nullptr;
+  }
 }
 
 Value* UnaryExpr::codegen() const {
-  return nullptr;
+  Value* operand = Builder.CreateLoad(this->operand->codegen());
+
+  switch(this->op) {
+    case UnOp::PLUS:
+      return operand;
+
+    case UnOp::MINUS:
+      if (this->type->is(BasicType::Integer))
+        return Builder.CreateNeg(operand, "neg");
+      else
+        return Builder.CreateFNeg(operand, "fneg");
+
+    case UnOp::NOT:
+      return Builder.CreateNot(operand, "neg");
+
+    default:
+      return nullptr;
+  }
 }
 
 Value* Empty::codegen() const {
@@ -916,14 +1126,27 @@ Value* Empty::codegen() const {
 }
 
 Value* Block::codegen() const {
+  for (auto& stmt : stmt_list)
+    stmt->codegen();
+
   return nullptr;
 }
 
 Value* VarNames::codegen() const {
+  Type* type = to_llvm_type(this->type);
+  for (auto& name : this->names) {
+    AllocaInst* alloca = Builder.CreateAlloca(type, nullptr, name);
+
+    var_map.insert(name, alloca);
+  }
+
   return nullptr;
 }
 
 Value* VarDecl::codegen() const {
+  for (auto& element : this->var_names)
+    this->codegen();
+
   return nullptr;
 }
 
@@ -936,11 +1159,18 @@ Value* VarAssign::codegen() const {
 }
 
 Value* Goto::codegen() const {
-  return nullptr;
+  return Builder.CreateBr(label_map[this->label]);
 }
 
 Value* Label::codegen() const {
-  return nullptr;
+  Function* TheFunction = Builder.GetInsertBlock()->getParent();
+
+  BasicBlock* LabelBB = BasicBlock::Create(TheContext, "label", TheFunction);
+  Builder.SetInsertPoint(LabelBB);
+
+  label_map[this->label] = LabelBB;
+
+  return this->stmt->codegen();
 }
 
 Value* If::codegen() const {
@@ -956,10 +1186,23 @@ Value* Formal::codegen() const {
 }
 
 Value* Body::codegen() const {
-  return nullptr;
+  for (auto& l : this->local_decls)
+    l->codegen();
+
+  return this->block->codegen();
 }
 
 Value* Fun::codegen() const {
+  if (!this->forward_declaration) {
+    var_map.open_scope();
+
+    for (auto& formal : this->formal_parameters)
+      for (auto& name : formal->get_names()) 
+
+    this->body->codegen();
+    var_map.close_scope();
+  }
+  
   return nullptr;
 }
 
@@ -968,6 +1211,16 @@ Value* CallStmt::codegen() const {
 }
 
 Value* Return::codegen() const {
+  // If within procedure then result variable is equal to nullptr
+  // else we return its value
+  AllocaInst* result_addr = var_map.lookup("result");
+  if (result_addr) {
+    Value* result_val = Builder.CreateLoad(result_addr);
+    Builder.CreateRet(result_val);
+  } else {
+    Builder.CreateRetVoid();
+  }
+
   return nullptr;
 }
 
@@ -981,6 +1234,7 @@ Value* Dispose::codegen() const {
 
 Value* Program::codegen() const {
   TheModule = std::make_unique<Module>("PCL program", TheContext);
+
   TheFPM = std::make_unique<legacy::FunctionPassManager>(TheModule.get());
   TheFPM->add(createPromoteMemoryToRegisterPass());
   TheFPM->add(createInstructionCombiningPass());
@@ -988,5 +1242,27 @@ Value* Program::codegen() const {
   TheFPM->add(createCFGSimplificationPass());
   TheFPM->doInitialization();
 
+  FunctionType* FT = FunctionType::get(i32, false);
+  Function* program = Function::Create(FT, Function::ExternalLinkage, this->name);
+
+  BasicBlock* BB = BasicBlock::Create(TheContext, "entry", program);
+  Builder.SetInsertPoint(BB);
+
+  var_map.open_scope();
+  this->body->codegen();
+  var_map.close_scope();
+
+  Builder.CreateRet(c32(0));
+
+  bool invalid = verifyModule(*TheModule, &errs());
+  if (invalid) {
+    std::cerr << "Invalid IR" << std::endl;
+    exit(1);
+  }
+  
+  TheFPM->run(*program);
+
+  TheModule->print(outs(), nullptr);
+  
   return nullptr;
 }

@@ -13,7 +13,7 @@ public:
   Entry(std::shared_ptr<TypeInfo> type);
   virtual ~Entry() = default;
 
-  std::shared_ptr<TypeInfo> get_type() const;
+  std::shared_ptr<TypeInfo> get_type();
 };
 
 class VariableEntry : public Entry {
@@ -21,25 +21,15 @@ public:
   VariableEntry(std::shared_ptr<TypeInfo> type);
 };
 
-class FunctionParameter {
-  bool pass_by_reference;
-  std::shared_ptr<TypeInfo> type;
-
-public:
-  FunctionParameter(bool pass_by_reference, std::shared_ptr<TypeInfo> type);
-
-  std::shared_ptr<TypeInfo> get_type();
-};
-
 class FunctionEntry : public Entry {
   bool forward_declaration;
-  std::vector<FunctionParameter> parameters;
+  std::vector<std::shared_ptr<VariableEntry>> parameters;
 
 public:
-  FunctionEntry(bool is_forward, std::shared_ptr<TypeInfo> type);
+  FunctionEntry(bool forward_declaration, std::shared_ptr<TypeInfo> type);
 
-  void add_parameter(FunctionParameter parameter);
-  std::vector<FunctionParameter>& get_parameters();
+  void add_parameter(std::shared_ptr<VariableEntry> parameter);
+  std::vector<std::shared_ptr<VariableEntry>>& get_parameters();
   bool is_forward();
 };
 

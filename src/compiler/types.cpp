@@ -31,6 +31,10 @@ CharType::CharType()
 ArrType::ArrType(int size, type_ptr subtype)
   : TypeInfo(BasicType::Array, true), size(size), subtype(subtype) {}
 
+int ArrType::get_size() {
+  return this->size;
+}
+
 type_ptr ArrType::get_subtype() {
   return this->subtype;
 }
@@ -48,6 +52,10 @@ void IArrType::set_size(int size) {
 
 PtrType::PtrType(type_ptr subtype)
   : TypeInfo(BasicType::Pointer, true), subtype(subtype) {}
+
+void PtrType::set_subtype(type_ptr subtype) {
+  this->subtype = subtype;
+}
 
 type_ptr PtrType::get_subtype() {
   return this->subtype;
@@ -144,6 +152,7 @@ bool TypeInfo::is(BasicType t) {
   return this->t == t;
 }
 
+// Function that checks if two types can be comared for (in)equality
 bool same_type(type_ptr left, type_ptr right) {
   auto left_basic_type = left->get_basic_type();
   auto right_basic_type = right->get_basic_type();
@@ -153,10 +162,29 @@ bool same_type(type_ptr left, type_ptr right) {
   } else if (left_basic_type == BasicType::Array || left_basic_type == BasicType::IArray) {
     return false;
   } else {
-    return true;
+    auto left_ptr_type = std::static_pointer_cast<PtrType>(left);
+    auto right_ptr_type = std::static_pointer_cast<PtrType>(right);
+
+    auto left_subtype = left_ptr_type->get_subtype();
+    auto right_subtype = right_ptr_type->get_subtype();
+
+    // Nil pointer can be of any type
+    // Also assign a proper type to nil during the semantic pass
+    if (!right_subtype) {
+      right_ptr_type->set_subtype(left_subtype);
+      return true;
+    }
+
+    if (!left_subtype) {
+      left_ptr_type->set_subtype(right_subtype);
+      return true;
+    }
+
+    return same_type(left_subtype, right_subtype);
   }
 }
 
+// Function that checks if two types are compatible for assignment
 bool compatible_types(type_ptr left, type_ptr right) {
   auto left_basic_type = left->get_basic_type();
   auto right_basic_type = right->get_basic_type();
@@ -204,9 +232,12 @@ bool compatible_types(type_ptr left, type_ptr right) {
     auto left_subtype = left_ptr_type->get_subtype();
     auto right_subtype = right_ptr_type->get_subtype();
 
-    // Nil pointer can be assigned to any type of pointer
-    if (!right_subtype)
+    // Nil pointer can be assigned to any pointer
+    // Also assign a proper type to nil during the semantic pass
+    if (!right_subtype) {
+      right_ptr_type->set_subtype(left_subtype);
       return true;
+    }
 
     return compatible_types(left_subtype, right_subtype);
   } else {

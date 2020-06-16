@@ -95,6 +95,7 @@ class ArrType : public TypeInfo {
 public:
   ArrType(int size, std::shared_ptr<TypeInfo> subtype);
 
+  int get_size();
   std::shared_ptr<TypeInfo> get_subtype();
   void print(std::ostream& out) const override;
 };
@@ -119,6 +120,7 @@ class PtrType : public TypeInfo {
 public:
   PtrType(std::shared_ptr<TypeInfo> subtype);
 
+  void set_subtype(std::shared_ptr<TypeInfo>);
   std::shared_ptr<TypeInfo> get_subtype();
   void print(std::ostream& out) const override;
 };
