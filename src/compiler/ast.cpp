@@ -2,22 +2,29 @@
 #include <memory>
 #include <string>
 
+#include <llvm/IR/DataLayout.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Value.h>
 #include <llvm/IR/Verifier.h>
+#include "llvm/Support/TargetRegistry.h"
+#include "llvm/Support/TargetSelect.h"
+#include "llvm/Target/TargetMachine.h"
+#include "llvm/Target/TargetOptions.h"
 #include <llvm/Transforms/InstCombine/InstCombine.h>
 #include <llvm/Transforms/Scalar.h>
 #include <llvm/Transforms/Scalar/GVN.h>
 #include <llvm/Transforms/Utils.h>
 
 #include "ast.hpp"
-#include "codegen_map.hpp"
+#include "codegen_entry.hpp"
+#include "codegen_scope.hpp"
+#include "codegen_table.hpp"
 #include "lexer.hpp"
-#include "scope.hpp"
 #include "symbol_entry.hpp"
+#include "symbol_scope.hpp"
 #include "symbol_table.hpp"
 #include "types.hpp"
 
@@ -40,8 +47,8 @@ static LLVMContext TheContext;
 static IRBuilder<> Builder(TheContext);
 static std::unique_ptr<Module> TheModule;
 static std::unique_ptr<legacy::FunctionPassManager> TheFPM;
-static CodegenMap var_map;
-static std::map<std::string, BasicBlock*> label_map;
+
+static CodegenTable codegen_table;
 
 //---------------------------------------------------------------------//
 //------------------Constructors/Getters/Setters-----------------------//
@@ -51,19 +58,19 @@ Node::Node() {
   this->line = line_num;
 }
 
-int Node::get_line() {
+int Node::get_line() const {
   return this->line;
 }
 
 Expr::Expr()
   : Node() {}
 
-Stmt::Stmt()
-  : Node() {}
-
-type_ptr Expr::get_type() {
+type_ptr Expr::get_type() const {
   return this->type;
 }
+
+Stmt::Stmt()
+  : Node() {}
 
 Boolean::Boolean(bool val)
   : Expr(), val(val) {}
@@ -89,8 +96,8 @@ Variable::Variable(std::string name)
 Array::Array(expr_ptr arr, expr_ptr index)
   : Expr(), arr(std::move(arr)), index(std::move(index)) {}
 
-Deref::Deref(expr_ptr var)
-  : Expr(), var(std::move(var)) {}
+Deref::Deref(expr_ptr ptr)
+  : Expr(), ptr(std::move(ptr)) {}
 
 AddressOf::AddressOf(expr_ptr var)
   : Expr(), var(std::move(var)) {}
@@ -125,7 +132,7 @@ VarDecl::VarDecl(std::vector<varnames_ptr> var_names)
 LabelDecl::LabelDecl(std::vector<std::string> names)
   : Local(), names(names) {}
 
-VarAssign::VarAssign(expr_ptr left, expr_ptr right)
+Assign::Assign(expr_ptr left, expr_ptr right)
   : Stmt(), left(std::move(left)), right(std::move(right)) {}
 
 Goto::Goto(std::string label)
@@ -137,21 +144,21 @@ Label::Label(std::string label, stmt_ptr stmt)
 If::If(expr_ptr cond, stmt_ptr if_stmt, stmt_ptr else_stmt)
   : Stmt(), cond(std::move(cond)), if_stmt(std::move(if_stmt)), else_stmt(std::move(else_stmt)) {}
 
-While::While(expr_ptr cond, stmt_ptr stmt)
-  : Stmt(), cond(std::move(cond)), stmt(std::move(stmt)) {}
+While::While(expr_ptr cond, stmt_ptr body)
+  : Stmt(), cond(std::move(cond)), body(std::move(body)) {}
 
 Formal::Formal(bool pass_by_reference, std::vector<std::string> names, type_ptr type)
   : Stmt(), pass_by_reference(pass_by_reference), names(names), type(type) {}
 
-bool Formal::get_pass_by_reference() {
+bool Formal::get_pass_by_reference() const {
   return this->pass_by_reference;
 }
 
-std::vector<std::string>& Formal::get_names() {
+std::vector<std::string> Formal::get_names() const {
   return this->names;
 }
 
-type_ptr Formal::get_type() {
+type_ptr Formal::get_type() const {
   return this->type;
 }
 
@@ -239,8 +246,8 @@ void Array::print(std::ostream& out, int level) const {
 
 void Deref::print(std::ostream& out, int level) const {
   print_level(out, level);
-  out << "Deref(var):" << std::endl;
-  this->var->print(out, level + 1);
+  out << "Deref(ptr):" << std::endl;
+  this->ptr->print(out, level + 1);
 }
 
 void AddressOf::print(std::ostream& out, int level) const {
@@ -313,9 +320,9 @@ void LabelDecl::print(std::ostream& out, int level) const {
   }
 }
 
-void VarAssign::print(std::ostream& out, int level) const {
+void Assign::print(std::ostream& out, int level) const {
   print_level(out, level);
-  out << "VarAssign(left, right):" << std::endl;
+  out << "Assign(left, right):" << std::endl;
   this->left->print(out, level + 1);
   this->right->print(out, level + 1);
 }
@@ -342,9 +349,9 @@ void If::print(std::ostream& out, int level) const {
 
 void While::print(std::ostream& out, int level) const {
   print_level(out, level);
-  out << "While(cond, stmt):" << std::endl;
+  out << "While(cond, body):" << std::endl;
   this->cond->print(out, level + 1);
-  this->stmt->print(out, level + 1);
+  this->body->print(out, level + 1);
 }
 
 void Formal::print(std::ostream& out, int level) const {
@@ -372,8 +379,9 @@ void Fun::print(std::ostream& out, int level) const {
   if (this->return_type) {
     out << "type: ";
     this->return_type->print(out);
+    out << ", ";
   }
-  out << ", formal_parameters, body, forward_declaration: " << this->forward_declaration << "):" << std::endl;
+  out << "formal_parameters, body, forward_declaration: " << this->forward_declaration << "):" << std::endl;
   for (auto& f : this->formal_parameters)
     f->print(out, level + 1);
   this->body->print(out, level + 1);
@@ -480,13 +488,13 @@ void Array::semantic() {
 }
 
 void Deref::semantic() {
-  this->var->semantic();
+  this->ptr->semantic();
 
-  auto var_type = this->var->get_type();
-  if (!var_type->is(BasicType::Pointer))
+  auto ptr_type = this->ptr->get_type();
+  if (!ptr_type->is(BasicType::Pointer))
     error("Variable is not of pointer type", this->get_line());
 
-  auto p_t = std::static_pointer_cast<PtrType>(var_type);
+  auto p_t = std::static_pointer_cast<PtrType>(ptr_type);
   this->type = p_t->get_subtype();
 }
 
@@ -499,7 +507,7 @@ void AddressOf::semantic() {
 }
 
 // Helper function for the two call nodes
-type_ptr call_semantic(std::string fun_name, std::vector<expr_ptr>& parameters, int line) {
+type_ptr call_semantic(const std::string& fun_name, const std::vector<expr_ptr>& call_parameters, const int& line) {
   auto entry = symbol_table.lookup(fun_name);
   if (!entry)
     error("Name of function " + fun_name + " not found", line);
@@ -508,12 +516,14 @@ type_ptr call_semantic(std::string fun_name, std::vector<expr_ptr>& parameters, 
   if (!function_entry)
     error("Name \"" + fun_name + "\" has already been used and is not a function", line);
 
-  for (auto& parameter : parameters)
+  for (auto& parameter : call_parameters)
     parameter->semantic();
 
+  // Function parameters are a pair of a bool (denoting whether the variable is passed by reference)
+  // and a variable entry which we can use to get its type
   auto fun_parameters = function_entry->get_parameters();
   int fun_param_count = fun_parameters.size();
-  int call_param_count = parameters.size();
+  int call_param_count = call_parameters.size();
 
   if (call_param_count < fun_param_count) {
     error("Not enough arguments provided for the call of function \"" + fun_name + "\"", line);
@@ -521,8 +531,17 @@ type_ptr call_semantic(std::string fun_name, std::vector<expr_ptr>& parameters, 
     error("Too many arguments provided for the call of function \"" + fun_name + "\"", line);
   } else {
     for (int i = 0; i < call_param_count; i++) {
-      auto call_param_type = parameters[i]->get_type();
-      auto fun_param_type = fun_parameters[i]->get_type();
+      auto call_param_type = call_parameters[i]->get_type();
+      auto fun_param_type = fun_parameters[i].second->get_type();
+
+      bool pass_by_reference = fun_parameters[i].first;
+      bool array = ((call_param_type->is(BasicType::Array) || call_param_type->is(BasicType::IArray))
+        || (fun_param_type->is(BasicType::Array) || fun_param_type->is(BasicType::IArray)))
+        && !pass_by_reference;
+
+      if (array)
+        error("Arrays cannot be passed by value", line);
+      
       if (!compatible_types(fun_param_type, call_param_type))
         error("Type of argument in function call does not match function definition", line);
     }
@@ -536,7 +555,7 @@ void CallExpr::semantic() {
 }
 
 void Result::semantic() {
-  auto result = symbol_table.current_scope_lookup("result");
+  auto result = symbol_table.lookup("result");
   if (!result)
     error("\"result\" variable not used within the body of a function that returns a result", this->get_line());
 
@@ -556,7 +575,6 @@ void BinaryExpr::semantic() {
     case BinOp::MUL:
       // Check if both operands are arithmetic types and set the expression's type
       // to real if at least one is a real number
-
       if (!left_type->is(BasicType::Integer) && !left_type->is(BasicType::Real))
         error(binop_to_string(this->op) + " operands need to be either of real or integer type", this->get_line());
 
@@ -573,7 +591,6 @@ void BinaryExpr::semantic() {
     case BinOp::DIV:
       // Check if both operands are arithmetic types and set the expression's type
       // to real
-
        if (!left_type->is(BasicType::Integer) && !left_type->is(BasicType::Real))
         error(binop_to_string(this->op) + " operands need to be either of real or integer type", this->get_line());
 
@@ -588,7 +605,6 @@ void BinaryExpr::semantic() {
     case BinOp::MOD:
       // Check if both operands are integers and set the expression's type
       // to integer
-
       if (!left_type->is(BasicType::Integer) || !right_type->is(BasicType::Integer))
         error(binop_to_string(this->op) + " operands need to be of integer type", this->get_line());
 
@@ -598,24 +614,27 @@ void BinaryExpr::semantic() {
 
     case BinOp::EQ:
     case BinOp::NE:
-      // Check if both operands are arithmetic types or of the same type and set the
-      // expression's type to boolean
+    {
+      // Check if both operands are arithmetic types or of the same type but not arrays
+      // and set the expression's type to boolean
+      bool arithmetic = (left_type->is(BasicType::Integer) || left_type->is(BasicType::Real))
+        && (right_type->is(BasicType::Integer) || right_type->is(BasicType::Real));
 
-      if (((!left_type->is(BasicType::Integer) && !left_type->is(BasicType::Real))
-            || (!right_type->is(BasicType::Integer) && !right_type->is(BasicType::Real)))
-          && !same_type(left_type, right_type))
-        error(binop_to_string(this->op) + " needs either arithmetic types or variables of the same type", this->get_line());
+      bool array = (left_type->is(BasicType::Array) || left_type->is(BasicType::IArray))
+        || (right_type->is(BasicType::Array) || right_type->is(BasicType::IArray));
+
+      if (!arithmetic && (array || !same_type(left_type, right_type)))
+        error(binop_to_string(this->op) + " needs either arithmetic types or variables of the same type but not arrays", this->get_line());
 
       this->type = std::make_shared<BoolType>();
 
       break;
-
+    }
     case BinOp::LT:
     case BinOp::GT:
     case BinOp::LE:
     case BinOp::GE:
       // Check if both operands are arithmetic types and set the expression's type to boolean
-
       if ((!left_type->is(BasicType::Integer) && !left_type->is(BasicType::Real))
             || (!right_type->is(BasicType::Integer) && !right_type->is(BasicType::Real)))
         error(binop_to_string(this->op) + " needs arithmetic types", this->get_line());
@@ -627,7 +646,6 @@ void BinaryExpr::semantic() {
    case BinOp::AND:
    case BinOp::OR:
       // Check if both operands are booleans and set the expression's type to boolean
-
       if (!left_type->is(BasicType::Boolean) || !right_type->is(BasicType::Boolean))
         error(binop_to_string(this->op) + " operands need to be of boolean type", this->get_line());
       
@@ -690,18 +708,24 @@ void VarDecl::semantic() {
 
 void LabelDecl::semantic() {
   for (auto& name : this->names) {
-    bool success = symbol_table.insert(name);
+    bool success = symbol_table.add_label(name);
     if (!success)
       error("Label " + name + " has already been declared", this->get_line());
   }
 }
 
-void VarAssign::semantic() {
+void Assign::semantic() {
   this->right->semantic();
   this->left->semantic();
 
   auto right_type = this->right->get_type();
   auto left_type = this->left->get_type();
+
+  bool array = (right_type->is(BasicType::Array) || right_type->is(BasicType::IArray))
+    || (left_type->is(BasicType::Array) || left_type->is(BasicType::IArray));
+
+  if (array)
+    error("Arrays cannot be assigned to directly", this->get_line());
 
   if (!compatible_types(left_type, right_type))
     error("Value cannot be assigned due to type mismatch", this->get_line());
@@ -739,7 +763,7 @@ void While::semantic() {
   if (!condition_type->is(BasicType::Boolean))
     error("Condition of while statement is not a boolean expression", this->get_line());
 
-  this->stmt->semantic();
+  this->body->semantic();
 }
 
 void Formal::semantic() {}
@@ -754,7 +778,6 @@ void Body::semantic() {
 void Fun::semantic() {
   // Check if function entry exists in the symbol table and if it does make sure that functions
   // with bodies are allowed only if the already existing entry belongs to a forward declaration 
-
   auto entry = symbol_table.lookup(this->fun_name);
   if (entry) {
     auto function_entry = std::dynamic_pointer_cast<FunctionEntry>(entry);
@@ -765,12 +788,13 @@ void Fun::semantic() {
   }
 
   // Create the function entry in the symbol table that is inserted in the current scope
-
   auto fun_entry = std::make_shared<FunctionEntry>(this->forward_declaration, this->return_type);
 
   for (auto& formal : this->formal_parameters) {
     for (auto& name : formal->get_names()) {
-      fun_entry->add_parameter(std::make_shared<VariableEntry>(formal->get_type()));
+      auto entry = std::make_shared<VariableEntry>(formal->get_type());
+      fun_entry->add_parameter(
+          std::make_pair(formal->get_pass_by_reference(), entry));
     }
   }
 
@@ -779,7 +803,6 @@ void Fun::semantic() {
     error(this->fun_name + " has already been declared and is not a function", this->get_line());
 
   // Open function's scope and insert the local variable's and the result variable if not a procedure
-  
   if (!this->forward_declaration) {
     symbol_table.open_scope();
 
@@ -789,6 +812,8 @@ void Fun::semantic() {
 
     if (this->return_type)
       symbol_table.insert("result", std::make_shared<VariableEntry>(this->return_type));
+    else
+      symbol_table.insert("result", nullptr);
 
     this->body->semantic();
 
@@ -803,10 +828,10 @@ void CallStmt::semantic() {
 void Return::semantic() {}
 
 void New::semantic() {
-  size->semantic();
-  l_value->semantic();
+  this->size->semantic();
+  this->l_value->semantic();
 
-  auto l_value_type = l_value->get_type();
+  auto l_value_type = this->l_value->get_type();
   if (!l_value_type->is(BasicType::Pointer)) {
     error("New requires an l value of pointer type", this->get_line());
   } else {
@@ -828,9 +853,9 @@ void New::semantic() {
 }
 
 void Dispose::semantic() {
-  l_value->semantic();
+  this->l_value->semantic();
 
-  auto l_value_type = l_value->get_type();
+  auto l_value_type = this->l_value->get_type();
   if (!l_value_type->is(BasicType::Pointer)) {
     error("Dispose requires an l value of pointer type", this->get_line());
   } else {
@@ -862,10 +887,10 @@ void Program::semantic() {
 // Type shortcuts for:
 // char,bool: i8  (1 byte)
 // integer:   i32 (4 bytes)
-// real:      i80 (10 bytes)
+// real:      f64 (8 bytes)
 static Type* i8 = Type::getInt8Ty(TheContext);
 static Type* i32 = Type::getInt32Ty(TheContext);
-static Type* i80 = Type::getX86_FP80Ty(TheContext);
+static Type* f64 = Type::getDoubleTy(TheContext);
 
 static ConstantInt* c8(bool b) {
   return ConstantInt::get(TheContext, APInt(8, b, true));
@@ -879,16 +904,19 @@ static ConstantInt* c32(int n) {
   return ConstantInt::get(TheContext, APInt(32, n, true));
 }
 
-static ConstantFP* c80(double d) {
+static ConstantFP* c64(double d) {
   return ConstantFP::get(TheContext, APFloat(d));
 }
 
 static Type* to_llvm_type(std::shared_ptr<TypeInfo> type) {
+  if (!type)
+    return Type::getVoidTy(TheContext);
+
   switch(type->get_basic_type()) {
     case BasicType::Integer:
       return i32;
     case BasicType::Real:
-      return i80;
+      return f64;
     case BasicType::Boolean:
       return i8;
     case BasicType::Char:
@@ -913,6 +941,43 @@ static Type* to_llvm_type(std::shared_ptr<TypeInfo> type) {
   }
 }
 
+static void init_module_and_pass_manager() {
+  TheModule = std::make_unique<Module>("PCL program", TheContext);
+
+  TheFPM = std::make_unique<legacy::FunctionPassManager>(TheModule.get());
+  TheFPM->add(createPromoteMemoryToRegisterPass());
+  TheFPM->add(createInstructionCombiningPass());
+  TheFPM->add(createGVNPass());
+  TheFPM->add(createCFGSimplificationPass());
+  TheFPM->doInitialization();
+
+  InitializeAllTargetInfos();
+  InitializeAllTargets();
+  InitializeAllTargetMCs();
+  InitializeAllAsmParsers();
+  InitializeAllAsmPrinters();
+
+  auto TargetTriple = sys::getDefaultTargetTriple();
+  TheModule->setTargetTriple(TargetTriple);
+
+  std::string Error;
+  auto Target = TargetRegistry::lookupTarget(TargetTriple, Error);
+
+  if (!Target) {
+    errs() << Error;
+    exit(1);
+  }
+
+  auto CPU = "generic";
+  auto Features = "";
+
+  TargetOptions opt;
+  auto RM = Optional<Reloc::Model>();
+  auto TheTargetMachine = Target->createTargetMachine(TargetTriple, CPU, Features, opt, RM);
+
+  TheModule->setDataLayout(TheTargetMachine->createDataLayout());
+}
+
 //---------------------------------------------------------------------//
 //--------------------------Codegen------------------------------------//
 //---------------------------------------------------------------------//
@@ -930,7 +995,7 @@ Value* Integer::codegen() const {
 }
 
 Value* Real::codegen() const {
-  return c80(this->val);
+  return c64(this->val);
 }
 
 Value* String::codegen() const {
@@ -944,52 +1009,108 @@ Value* Nil::codegen() const {
 }
 
 Value* Variable::codegen() const {
-  return var_map.lookup(this->name);
+  return codegen_table.lookup_var(this->name);
 }
 
 Value* Array::codegen() const {
   Value* arr = this->arr->codegen();
   Value* index = this->index->codegen();
 
-  Value* base_addr = Builder.CreateLoad(arr);
-  return Builder.CreateGEP(base_addr, index);
+  index = (index->getType()->isPointerTy()) ? Builder.CreateLoad(index) : index;
+
+  PointerType* pt = dyn_cast<PointerType>(arr->getType());
+  if (pt) {
+    if (pt->getElementType()->isArrayTy()) {
+      return Builder.CreateInBoundsGEP(arr, std::vector<Value*>{c32(0), index}, "array_gep");
+    } else {
+      return Builder.CreateInBoundsGEP(arr, index, "iarray_gep");
+    }
+  } else {
+    return nullptr;
+  }
 }
 
 Value* Deref::codegen() const {
-  return Builder.CreateLoad(this->var->codegen());
+  return Builder.CreateLoad(this->ptr->codegen());
 }
 
+// Allocate and return pointer to the variable so that
+// when it's loaded we get the address of the variable
 Value* AddressOf::codegen() const {
   Value* var = this->var->codegen();
-  AllocaInst* ptr = Builder.CreateAlloca(var->getType(), nullptr, "pointer");
+  AllocaInst* ptr = Builder.CreateAlloca(var->getType()->getPointerTo(), nullptr, "pointer");
   Builder.CreateStore(var, ptr, false);
   return ptr;
 }
 
+// Helper function for the two call nodes
+Value* call_codegen(const std::string& fun_name, const std::vector<expr_ptr>& call_parameters, const int& line) {
+  auto fun_def = codegen_table.lookup_fun(fun_name);
+  auto fun_parameters = fun_def->get_parameters();
+  Function* F = fun_def->get_function();
+
+  std::vector<Value*> ArgsV;
+
+  int call_param_count = call_parameters.size();
+
+  for (int i = 0; i < call_param_count; i++) {
+    bool pass_by_reference = fun_parameters[i];
+
+    Value* v = call_parameters[i]->codegen();
+    if (pass_by_reference) {
+      if (!v->getType()->isPointerTy()) {
+        std::cerr << "Line: " << line << "Error: Pass by reference requires an l-value" << std::endl;
+        exit(1);
+      }
+
+      PointerType* pt = cast<PointerType>(v->getType());
+      if (pt->getElementType()->isArrayTy())
+        v = Builder.CreateInBoundsGEP(v, std::vector<Value*>{c32(0), c32(0)}, "array_gep");
+
+      ArgsV.push_back(v);
+    } else {
+      v = (v->getType()->isPointerTy()) ? Builder.CreateLoad(v) : v;
+      ArgsV.push_back(v);
+    }
+  }
+
+  return Builder.CreateCall(F, ArgsV);
+}
+
 Value* CallExpr::codegen() const {
-  return nullptr;
+  return call_codegen(this->fun_name, this->parameters, this->get_line());
 }
 
 Value* Result::codegen() const {
-  return var_map.lookup("result");
+  return codegen_table.lookup_var("result");
 }
 
 Value* BinaryExpr::codegen() const {
-  Value* left = Builder.CreateLoad(this->left->codegen());
-  Value* right = Builder.CreateLoad(this->right->codegen());
+  Value* left = this->left->codegen();
+
+  // AND,OR operations are shortcircuited and the right operand is
+  // only evaluated if the result is not known from the left operand
+  Value* right;
+  if (this->op != BinOp::AND && this->op != BinOp::OR)
+    right = this->right->codegen();
+
+  // If pointers to value load the value
+  left = (left->getType()->isPointerTy()) ? Builder.CreateLoad(left) : left;
+  if (this->op != BinOp::AND && this->op != BinOp::OR)
+    right = (right->getType()->isPointerTy()) ? Builder.CreateLoad(right) : right;
 
   auto left_type = this->left->get_type();
   auto right_type = this->right->get_type();
 
   if (left_type->is(BasicType::Integer)
       && right_type->is(BasicType::Real))
-    left = Builder.CreateSIToFP(left, i80, "sitofp");
+    left = Builder.CreateSIToFP(left, f64, "sitofp");
 
   if (left_type->is(BasicType::Real)
       && right_type->is(BasicType::Integer))
-    right = Builder.CreateSIToFP(right, i80, "sitofp");
+    right = Builder.CreateSIToFP(right, f64, "sitofp");
 
-  switch(op) {
+  switch(this->op) {
     case BinOp::PLUS:
       if (this->type->is(BasicType::Integer))
         return Builder.CreateAdd(left, right, "add_int");
@@ -1010,10 +1131,10 @@ Value* BinaryExpr::codegen() const {
 
     case BinOp::DIV:
       if (left_type->is(BasicType::Integer))
-        left = Builder.CreateSIToFP(left, i80, "sitofp");
+        left = Builder.CreateSIToFP(left, f64, "sitofp");
 
       if (right_type->is(BasicType::Integer))
-        right = Builder.CreateSIToFP(right, i80, "sitofp");
+        right = Builder.CreateSIToFP(right, f64, "sitofp");
 
       return Builder.CreateFDiv(left, right, "div_real");
 
@@ -1090,10 +1211,76 @@ Value* BinaryExpr::codegen() const {
     }
 
     case BinOp::AND:
-      return Builder.CreateAnd(left, right, "and");
+    {
+      Value* res = Builder.CreateAlloca(i8, nullptr, "and_res");
+
+      Value* cmp_res = Builder.CreateICmpEQ(left, c8(false), "icmp_eq");
+
+      Function* TheFunction = Builder.GetInsertBlock()->getParent();
+
+      BasicBlock* FalseBB = BasicBlock::Create(TheContext, "and_false", TheFunction);
+      BasicBlock* ElseBB = BasicBlock::Create(TheContext, "and_right_operand");
+      BasicBlock* AfterBB = BasicBlock::Create(TheContext, "after");
+
+      Builder.CreateCondBr(cmp_res, FalseBB, ElseBB);
+
+      Builder.SetInsertPoint(FalseBB);
+      Builder.CreateStore(c8(false), res);
+      Builder.CreateBr(AfterBB);
+
+      TheFunction->getBasicBlockList().push_back(ElseBB);
+      Builder.SetInsertPoint(ElseBB);
+
+      right = this->right->codegen();
+      right = (right->getType()->isPointerTy()) ? Builder.CreateLoad(right) : right;
+
+      Value* right_operand = Builder.CreateICmpEQ(right, c8(true), "icmp_eq");
+      right_operand = Builder.CreateZExt(right_operand, i8);
+
+      Builder.CreateStore(right_operand, res);
+      Builder.CreateBr(AfterBB);
+
+      TheFunction->getBasicBlockList().push_back(AfterBB);
+      Builder.SetInsertPoint(AfterBB);
+
+      return res;
+    }
 
     case BinOp::OR:
-      return Builder.CreateOr(left, right, "or");
+    {
+      Value* res = Builder.CreateAlloca(i8, nullptr, "or_res");
+
+      Value* cmp_res = Builder.CreateICmpEQ(left, c8(true), "icmp_eq");
+
+      Function* TheFunction = Builder.GetInsertBlock()->getParent();
+
+      BasicBlock* TrueBB = BasicBlock::Create(TheContext, "or_true", TheFunction);
+      BasicBlock* ElseBB = BasicBlock::Create(TheContext, "or_right_operand");
+      BasicBlock* AfterBB = BasicBlock::Create(TheContext, "after");
+
+      Builder.CreateCondBr(cmp_res, TrueBB, ElseBB);
+
+      Builder.SetInsertPoint(TrueBB);
+      Builder.CreateStore(c8(true), res);
+      Builder.CreateBr(AfterBB);
+
+      TheFunction->getBasicBlockList().push_back(ElseBB);
+      Builder.SetInsertPoint(ElseBB);
+
+      right = this->right->codegen();
+      right = (right->getType()->isPointerTy()) ? Builder.CreateLoad(right) : right;
+
+      Value* right_operand = Builder.CreateICmpEQ(right, c8(true), "icmp_eq");
+      right_operand = Builder.CreateZExt(right_operand, i8);
+
+      Builder.CreateStore(right_operand, res);
+      Builder.CreateBr(AfterBB);
+
+      TheFunction->getBasicBlockList().push_back(AfterBB);
+      Builder.SetInsertPoint(AfterBB);
+
+      return res;
+    }
 
     default:
       return nullptr;
@@ -1101,7 +1288,8 @@ Value* BinaryExpr::codegen() const {
 }
 
 Value* UnaryExpr::codegen() const {
-  Value* operand = Builder.CreateLoad(this->operand->codegen());
+  Value* operand = this->operand->codegen();
+  operand = (operand->getType()->isPointerTy()) ? Builder.CreateLoad(operand) : operand;
 
   switch(this->op) {
     case UnOp::PLUS:
@@ -1137,7 +1325,7 @@ Value* VarNames::codegen() const {
   for (auto& name : this->names) {
     AllocaInst* alloca = Builder.CreateAlloca(type, nullptr, name);
 
-    var_map.insert(name, alloca);
+    codegen_table.insert_var(name, alloca);
   }
 
   return nullptr;
@@ -1145,7 +1333,7 @@ Value* VarNames::codegen() const {
 
 Value* VarDecl::codegen() const {
   for (auto& element : this->var_names)
-    this->codegen();
+    element->codegen();
 
   return nullptr;
 }
@@ -1154,30 +1342,94 @@ Value* LabelDecl::codegen() const {
   return nullptr;
 }
 
-Value* VarAssign::codegen() const {
+Value* Assign::codegen() const {
+  Value* left = this->left->codegen();
+  Value* right = this->right->codegen();
+
+  right = (right->getType()->isPointerTy()) ? Builder.CreateLoad(right) : right;
+
+  Builder.CreateStore(right, left);
   return nullptr;
 }
 
 Value* Goto::codegen() const {
-  return Builder.CreateBr(label_map[this->label]);
+  Builder.CreateBr(codegen_table.lookup_label(this->label));
+  return nullptr;
 }
 
 Value* Label::codegen() const {
   Function* TheFunction = Builder.GetInsertBlock()->getParent();
 
-  BasicBlock* LabelBB = BasicBlock::Create(TheContext, "label", TheFunction);
+  BasicBlock* LabelBB = BasicBlock::Create(TheContext, "label_" + this->label, TheFunction);
   Builder.SetInsertPoint(LabelBB);
 
-  label_map[this->label] = LabelBB;
+  codegen_table.insert_label(this->label, LabelBB);
 
-  return this->stmt->codegen();
+  this->stmt->codegen();
+
+  return nullptr;
 }
 
 Value* If::codegen() const {
+  Value* cond = this->cond->codegen();
+  cond = (cond->getType()->isPointerTy()) ? Builder.CreateLoad(cond) : cond;
+  Value* cmp_res = Builder.CreateICmpEQ(cond, c8(true), "if_cmp");
+
+  Function* TheFunction = Builder.GetInsertBlock()->getParent();
+
+  BasicBlock* ThenBB = BasicBlock::Create(TheContext, "then", TheFunction);
+  BasicBlock* ElseBB = BasicBlock::Create(TheContext, "else");
+  BasicBlock* AfterBB = BasicBlock::Create(TheContext, "after");
+
+  Builder.CreateCondBr(cmp_res, ThenBB, ElseBB);
+
+  Builder.SetInsertPoint(ThenBB);
+  this->if_stmt->codegen();
+
+  // If a terminator instruction was already generated we skip the branch instruction
+  if (!Builder.GetInsertBlock()->getTerminator())
+    Builder.CreateBr(AfterBB);
+
+  TheFunction->getBasicBlockList().push_back(ElseBB);
+  Builder.SetInsertPoint(ElseBB);
+  if (this->else_stmt)
+    this->else_stmt->codegen();
+
+  // If a terminator instruction was already generated we skip the branch instruction
+  if (!Builder.GetInsertBlock()->getTerminator())
+    Builder.CreateBr(AfterBB);
+
+  //Builder.CreateBr(AfterBB);
+  TheFunction->getBasicBlockList().push_back(AfterBB);
+  Builder.SetInsertPoint(AfterBB);
+
   return nullptr;
 }
 
 Value* While::codegen() const {
+  Function* TheFunction = Builder.GetInsertBlock()->getParent();
+
+  BasicBlock* LoopBB = BasicBlock::Create(TheContext, "loop", TheFunction);
+  BasicBlock* BodyBB = BasicBlock::Create(TheContext, "body");
+  BasicBlock* AfterBB = BasicBlock::Create(TheContext, "after");
+
+  Builder.CreateBr(LoopBB);
+  Builder.SetInsertPoint(LoopBB);
+
+  Value* cond = this->cond->codegen();
+  cond = (cond->getType()->isPointerTy()) ? Builder.CreateLoad(cond) : cond;
+  Value* cmp_res = Builder.CreateICmpEQ(cond, c8(true), "while_cmp");
+  
+  Builder.CreateCondBr(cmp_res, BodyBB, AfterBB);
+
+  TheFunction->getBasicBlockList().push_back(BodyBB);
+  Builder.SetInsertPoint(BodyBB);
+  this->body->codegen();
+  Builder.CreateBr(LoopBB);
+
+  TheFunction->getBasicBlockList().push_back(AfterBB);
+  Builder.SetInsertPoint(AfterBB);
+
   return nullptr;
 }
 
@@ -1189,31 +1441,109 @@ Value* Body::codegen() const {
   for (auto& l : this->local_decls)
     l->codegen();
 
-  return this->block->codegen();
+  this->block->codegen();
+
+  return nullptr;
 }
 
 Value* Fun::codegen() const {
-  if (!this->forward_declaration) {
-    var_map.open_scope();
+  BasicBlock* Parent = Builder.GetInsertBlock();
 
-    for (auto& formal : this->formal_parameters)
-      for (auto& name : formal->get_names()) 
+  // Create function once
+  if (!codegen_table.lookup_fun(this->fun_name)) {
+    std::vector<Type*> args;
+    std::vector<bool> parameters;
+
+    for (auto& formal : this->formal_parameters) {
+      for (auto& name : formal->get_names()) {
+        Type* type = to_llvm_type(formal->get_type());
+
+        if (formal->get_pass_by_reference())
+          type = type->getPointerTo();
+
+        args.push_back(type);
+        parameters.push_back(formal->get_pass_by_reference());
+      }
+    }
+
+    Type* ret_type = to_llvm_type(this->return_type);
+
+    FunctionType* FT = FunctionType::get(ret_type, args, false);
+    Function* F = Function::Create(FT, Function::PrivateLinkage, this->fun_name, TheModule.get());
+
+    auto fun_def = std::make_shared<FunDef>(ret_type, parameters, F);
+
+    codegen_table.insert_fun(this->fun_name, fun_def);
+  }
+
+  // If not forward declaration generate code
+  if (!this->forward_declaration) {
+    codegen_table.open_scope();
+
+    auto fun_def = codegen_table.lookup_fun(this->fun_name);
+    Function* TheFunction = fun_def->get_function();
+
+    BasicBlock* BB = BasicBlock::Create(TheContext, "entry", TheFunction);
+    Builder.SetInsertPoint(BB);
+
+    FunctionType* FT = TheFunction->getFunctionType();
+
+    unsigned i = 0;
+    for (auto& formal : this->formal_parameters) {
+      for (auto& name : formal->get_names()) {
+        Type* type = FT->getParamType(i);
+
+        Value* alloca = Builder.CreateAlloca(type, nullptr, name);
+        Builder.CreateStore(TheFunction->getArg(i), alloca);
+        
+        if (formal->get_pass_by_reference())
+          alloca = Builder.CreateLoad(alloca);
+
+        codegen_table.insert_var(name, alloca);
+
+        Type* ret_type = FT->getReturnType();
+        if (!ret_type->isVoidTy()) {
+          AllocaInst* ret = Builder.CreateAlloca(ret_type, nullptr, "result");
+          codegen_table.insert_var("result", ret);
+        } else {
+          codegen_table.insert_var("result", nullptr);
+        }
+
+        i++;
+      }
+    }
 
     this->body->codegen();
-    var_map.close_scope();
+
+    // If within procedure then result variable is equal to nullptr
+    // else we return its value
+    Value* result_addr = codegen_table.lookup_var("result");
+    if (result_addr) {
+      Value* result_val = Builder.CreateLoad(result_addr);
+      Builder.CreateRet(result_val);
+    } else {
+      Builder.CreateRetVoid();
+    }
+
+    codegen_table.close_scope();
   }
-  
+
+  // Restore builder to parent
+  Builder.SetInsertPoint(Parent);
+
   return nullptr;
 }
 
 Value* CallStmt::codegen() const {
+  call_codegen(this->fun_name, this->parameters, this->get_line());
+
   return nullptr;
 }
 
 Value* Return::codegen() const {
   // If within procedure then result variable is equal to nullptr
   // else we return its value
-  AllocaInst* result_addr = var_map.lookup("result");
+  Value* result_addr = codegen_table.lookup_var("result");
   if (result_addr) {
     Value* result_val = Builder.CreateLoad(result_addr);
     Builder.CreateRet(result_val);
@@ -1233,24 +1563,19 @@ Value* Dispose::codegen() const {
 }
 
 Value* Program::codegen() const {
-  TheModule = std::make_unique<Module>("PCL program", TheContext);
-
-  TheFPM = std::make_unique<legacy::FunctionPassManager>(TheModule.get());
-  TheFPM->add(createPromoteMemoryToRegisterPass());
-  TheFPM->add(createInstructionCombiningPass());
-  TheFPM->add(createGVNPass());
-  TheFPM->add(createCFGSimplificationPass());
-  TheFPM->doInitialization();
+  init_module_and_pass_manager();
 
   FunctionType* FT = FunctionType::get(i32, false);
-  Function* program = Function::Create(FT, Function::ExternalLinkage, this->name);
+  Function* program = Function::Create(FT, Function::ExternalLinkage, this->name, TheModule.get());
 
   BasicBlock* BB = BasicBlock::Create(TheContext, "entry", program);
   Builder.SetInsertPoint(BB);
 
-  var_map.open_scope();
+  codegen_table.open_scope();
+
   this->body->codegen();
-  var_map.close_scope();
+
+  codegen_table.close_scope();
 
   Builder.CreateRet(c32(0));
 
@@ -1260,7 +1585,7 @@ Value* Program::codegen() const {
     exit(1);
   }
   
-  TheFPM->run(*program);
+  //TheFPM->run(*program);
 
   TheModule->print(outs(), nullptr);
   

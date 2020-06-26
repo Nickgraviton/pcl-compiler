@@ -6,13 +6,14 @@
 #**********************************************************************
 
 CXX=clang++
-CXXFLAGS=-Wall $(shell llvm-config --cxxflags)
+CXXFLAGS=-g -Wall $(shell llvm-config --cxxflags)
 LDFLAGS=$(shell llvm-config --ldflags --libs all)
 RM=rm -f
 
 all: pcl
 
-pcl: lexer.o parser.o ast.o codegen_map.o types.o pcl.o symbol_table.o scope.o symbol_entry.o
+pcl: lexer.o parser.o ast.o codegen_table.o codegen_scope.o codegen_entry.o\
+	types.o pcl.o symbol_table.o symbol_scope.o symbol_entry.o
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
 pcl.o: parser.cpp

@@ -1,14 +1,13 @@
 program mean;
 
 var n, k, i, seed : integer;
-sum
-: real;
+sum : real;
 
 begin
   (*writeString("Give n: ");*)
-  n := 0(*readInteger()*);
+  n := 2(*readInteger()*);
   (*writeString("Give k: ");*)
-  k := 0(*readInteger()*);
+  k := 4(*readInteger()*);
 
   i := 0;
   sum := 0.0;

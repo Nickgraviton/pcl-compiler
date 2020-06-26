@@ -19,7 +19,7 @@ public:
   Node();
   virtual ~Node() = default;
 
-  int get_line();
+  int get_line() const;
   virtual void print(std::ostream& out, int level) const = 0;
   virtual void semantic() = 0;
   virtual llvm::Value* codegen() const = 0;
@@ -32,7 +32,7 @@ protected:
 public:
   Expr();
 
-  std::shared_ptr<TypeInfo> get_type();
+  std::shared_ptr<TypeInfo> get_type() const;
 };
 
 class Stmt : public Node {
@@ -155,10 +155,10 @@ public:
 
 // Dereference expression
 class Deref : public Expr {
-  std::unique_ptr<Expr> var;
+  std::unique_ptr<Expr> ptr;
 
 public:
-  Deref(std::unique_ptr<Expr> var);
+  Deref(std::unique_ptr<Expr> ptr);
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
@@ -295,12 +295,12 @@ public:
   llvm::Value* codegen() const override;
 };
 
-// Variable assignment statement
-class VarAssign : public Stmt {
+// Assignment statement
+class Assign : public Stmt {
   std::unique_ptr<Expr> left, right;
 
 public:
-  VarAssign(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right);
+  Assign(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right);
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
@@ -348,10 +348,10 @@ public:
 // While loop
 class While : public Stmt {
   std::unique_ptr<Expr> cond;
-  std::unique_ptr<Stmt> stmt;
+  std::unique_ptr<Stmt> body;
 
 public:
-  While(std::unique_ptr<Expr> cond, std::unique_ptr<Stmt> stmt);
+  While(std::unique_ptr<Expr> cond, std::unique_ptr<Stmt> body);
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
@@ -369,9 +369,9 @@ class Formal : public Stmt {
 public:
   Formal(bool pass_by_reference, std::vector<std::string> names, std::shared_ptr<TypeInfo> type);
 
-  bool get_pass_by_reference();
-  std::vector<std::string>& get_names();
-  std::shared_ptr<TypeInfo> get_type();
+  bool get_pass_by_reference() const;
+  std::vector<std::string> get_names() const;
+  std::shared_ptr<TypeInfo> get_type() const;
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
@@ -416,9 +416,11 @@ public:
 class CallStmt : public Stmt {
   std::string fun_name;
   std::vector<std::unique_ptr<Expr>> parameters;
+  std::vector<bool> pass_by_reference;
 
 public:
   CallStmt(std::string fun_name, std::vector<std::unique_ptr<Expr>> parameters);
+
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;

@@ -1,12 +1,12 @@
 #include <string>
 
-#include "scope.hpp"
+#include "symbol_scope.hpp"
 #include "symbol_entry.hpp"
 #include "types.hpp"
 
 using entry_ptr = std::shared_ptr<Entry>;
 
-bool Scope::insert(std::string label) {
+bool SymbolScope::add_label(std::string label) {
   auto it = this->labels.find(label);
   if (it != this->labels.end()) {
     return false;
@@ -16,7 +16,7 @@ bool Scope::insert(std::string label) {
   }
 }
 
-bool Scope::has_label(std::string label) {
+bool SymbolScope::has_label(std::string label) {
   auto it = this->labels.find(label);
   if (it != this->labels.end())
     return true;
@@ -24,7 +24,7 @@ bool Scope::has_label(std::string label) {
     return false;
 }
 
-bool Scope::insert(std::string name, entry_ptr entry) {
+bool SymbolScope::insert(std::string name, entry_ptr entry) {
   auto it = this->entries.find(name);
   if (it != this->entries.end()) {
     return false;
@@ -34,7 +34,7 @@ bool Scope::insert(std::string name, entry_ptr entry) {
   }
 }
 
-entry_ptr Scope::lookup(std::string name) {
+entry_ptr SymbolScope::lookup(std::string name) {
   auto it = this->entries.find(name);
   if (it != this->entries.end())
     return this->entries[name];

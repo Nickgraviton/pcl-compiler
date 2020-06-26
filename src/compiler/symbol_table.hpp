@@ -6,21 +6,20 @@
 #include <vector>
 
 class Entry;
-class Scope;
+class SymbolScope;
 
 class SymbolTable {
-  std::vector<Scope> scopes;
+  std::vector<SymbolScope> scopes;
 
 public:
   void open_scope();
   void close_scope();
 
-  bool insert(std::string label);
+  bool add_label(std::string label);
   bool has_label(std::string label);
 
   bool insert(std::string name, std::shared_ptr<Entry> entry);
   std::shared_ptr<Entry> lookup(std::string name);
-  std::shared_ptr<Entry> current_scope_lookup(std::string name);
 };
 
 #endif

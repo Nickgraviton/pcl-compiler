@@ -159,9 +159,23 @@ bool same_type(type_ptr left, type_ptr right) {
 
   if (left_basic_type != right_basic_type) {
     return false;
-  } else if (left_basic_type == BasicType::Array || left_basic_type == BasicType::IArray) {
-    return false;
-  } else {
+  } else if (left_basic_type == BasicType::Array) {
+    auto left_arr_type = std::static_pointer_cast<ArrType>(left);
+    auto right_arr_type = std::static_pointer_cast<ArrType>(right);
+
+    auto left_subtype = left_arr_type->get_subtype();
+    auto right_subtype = right_arr_type->get_subtype();
+
+    return same_type(left_subtype, right_subtype);
+  } else if (left_basic_type == BasicType::IArray) {
+    auto left_iarr_type = std::static_pointer_cast<IArrType>(left);
+    auto right_iarr_type = std::static_pointer_cast<IArrType>(right);
+
+    auto left_subtype = left_iarr_type->get_subtype();
+    auto right_subtype = right_iarr_type->get_subtype();
+
+    return same_type(left_subtype, right_subtype);
+  } else if (left_basic_type == BasicType::Pointer) {
     auto left_ptr_type = std::static_pointer_cast<PtrType>(left);
     auto right_ptr_type = std::static_pointer_cast<PtrType>(right);
 
@@ -181,6 +195,8 @@ bool same_type(type_ptr left, type_ptr right) {
     }
 
     return same_type(left_subtype, right_subtype);
+  } else {
+    return true;
   }
 }
 
@@ -194,53 +210,39 @@ bool compatible_types(type_ptr left, type_ptr right) {
       // Integer can be assigned to real
 
       return true;
-    } else if (left_basic_type == BasicType::IArray && right_basic_type == BasicType::Array) {
-      // Arrays can be assigned to incomplete arrays
+    } else if (left_basic_type == BasicType::Pointer && right_basic_type == BasicType::Pointer) {
+      // Pointers to Arrays can be assigned to pointers to IArrays
 
-      auto left_arr_type = std::static_pointer_cast<IArrType>(left);
-      auto right_arr_type = std::static_pointer_cast<IArrType>(right);
+      auto left_ptr_type = std::static_pointer_cast<PtrType>(left);
+      auto right_ptr_type = std::static_pointer_cast<PtrType>(right);
+      
+      if (!left_ptr_type->get_subtype()->is(BasicType::IArray)
+          || !right_ptr_type->get_subtype()->is(BasicType::Array))
+        return false;
+
+      auto left_arr_type = std::static_pointer_cast<IArrType>(left_ptr_type->get_subtype());
+      auto right_arr_type = std::static_pointer_cast<ArrType>(right_ptr_type->get_subtype());
 
       auto left_subtype = left_arr_type->get_subtype();
       auto right_subtype = right_arr_type->get_subtype();
 
-      return compatible_types(left_subtype, right_subtype);
+      return same_type(left_subtype, right_subtype);
+    } else if (left_basic_type == BasicType::IArray && right_basic_type == BasicType::Array) {
+      // Arrays can be assigned to IArrays when passed by reference
+
+      auto left_arr_type = std::static_pointer_cast<IArrType>(left);
+      auto right_arr_type = std::static_pointer_cast<ArrType>(right);
+
+      auto left_subtype = left_arr_type->get_subtype();
+      auto right_subtype = right_arr_type->get_subtype();
+
+      return same_type(left_subtype, right_subtype);
     } else {
       // Any two other different types cannot be assigned to each other
 
       return false;
     }
-  } else if (left_basic_type == BasicType::Array) {
-    auto left_arr_type = std::static_pointer_cast<ArrType>(left);
-    auto right_arr_type = std::static_pointer_cast<ArrType>(right);
-
-    auto left_subtype = left_arr_type->get_subtype();
-    auto right_subtype = right_arr_type->get_subtype();
-
-    return compatible_types(left_subtype, right_subtype);
-  } else if (left_basic_type == BasicType::IArray) {
-    auto left_iarr_type = std::static_pointer_cast<IArrType>(left);
-    auto right_iarr_type = std::static_pointer_cast<IArrType>(right);
-
-    auto left_subtype = left_iarr_type->get_subtype();
-    auto right_subtype = right_iarr_type->get_subtype();
-
-    return compatible_types(left_subtype, right_subtype);
-  } else if (left_basic_type == BasicType::Pointer) {
-    auto left_ptr_type = std::static_pointer_cast<PtrType>(left);
-    auto right_ptr_type = std::static_pointer_cast<PtrType>(right);
-
-    auto left_subtype = left_ptr_type->get_subtype();
-    auto right_subtype = right_ptr_type->get_subtype();
-
-    // Nil pointer can be assigned to any pointer
-    // Also assign a proper type to nil during the semantic pass
-    if (!right_subtype) {
-      right_ptr_type->set_subtype(left_subtype);
-      return true;
-    }
-
-    return compatible_types(left_subtype, right_subtype);
   } else {
-    return true;
+    return same_type(left, right);
   }
 }

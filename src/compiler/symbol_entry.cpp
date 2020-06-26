@@ -1,4 +1,6 @@
 #include <memory>
+#include <utility>
+#include <vector>
 
 #include "symbol_entry.hpp"
 #include "types.hpp"
@@ -18,11 +20,11 @@ VariableEntry::VariableEntry(type_ptr type)
 FunctionEntry::FunctionEntry(bool forward_declaration, type_ptr type)
   : Entry(type), forward_declaration(forward_declaration) {}
 
-void FunctionEntry::add_parameter(std::shared_ptr<VariableEntry> parameter) {
+void FunctionEntry::add_parameter(std::pair<bool, std::shared_ptr<VariableEntry>> parameter) {
   this->parameters.push_back(parameter);
 }
 
-std::vector<std::shared_ptr<VariableEntry>>& FunctionEntry::get_parameters() {
+std::vector<std::pair<bool, std::shared_ptr<VariableEntry>>>& FunctionEntry::get_parameters() {
   return this->parameters;
 }
 

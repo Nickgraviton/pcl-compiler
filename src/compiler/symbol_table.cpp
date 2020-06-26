@@ -2,7 +2,7 @@
 #include <string>
 #include <vector>
 
-#include "scope.hpp"
+#include "symbol_scope.hpp"
 #include "symbol_table.hpp"
 #include "symbol_entry.hpp"
 #include "types.hpp"
@@ -10,15 +10,15 @@
 using entry_ptr = std::shared_ptr<Entry>;
 
 void SymbolTable::open_scope() {
-  this->scopes.push_back(Scope());
+  this->scopes.push_back(SymbolScope());
 }
 
 void SymbolTable::close_scope() {
   this->scopes.pop_back();
 }
 
-bool SymbolTable::insert(std::string label) {
-  return this->scopes.back().insert(label);
+bool SymbolTable::add_label(std::string label) {
+  return this->scopes.back().add_label(label);
 }
 
 bool SymbolTable::has_label(std::string label) {
@@ -36,8 +36,4 @@ entry_ptr SymbolTable::lookup(std::string name) {
       return result;
   }
   return nullptr;
-}
-
-entry_ptr SymbolTable::current_scope_lookup(std::string name) {
-  return this->scopes.back().lookup(name);
 }

@@ -139,7 +139,7 @@ next_stmt:
 ;
 
 stmt:
-  l_value ASSIGN expr               { $$ = std::make_unique<VarAssign>(std::move($1), std::move($3));         }
+  l_value ASSIGN expr               { $$ = std::make_unique<Assign>(std::move($1), std::move($3));         }
 | block                             { $$ = std::move($1);                                                     }
 | ID OP_PAR next_parameter CLOS_PAR { $$ = std::make_unique<CallStmt>($1, std::move($3));                     }
 | IF expr THEN stmt                 { $$ = std::make_unique<If>(std::move($2), std::move($4), nullptr);       }

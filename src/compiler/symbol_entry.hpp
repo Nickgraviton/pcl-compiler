@@ -2,6 +2,7 @@
 #define __SYMBOL_ENTRY_HPP__
 
 #include <memory>
+#include <utility>
 #include <vector>
 
 class TypeInfo;
@@ -23,13 +24,14 @@ public:
 
 class FunctionEntry : public Entry {
   bool forward_declaration;
-  std::vector<std::shared_ptr<VariableEntry>> parameters;
+  std::vector<std::pair<bool, std::shared_ptr<VariableEntry>>> parameters;
 
 public:
   FunctionEntry(bool forward_declaration, std::shared_ptr<TypeInfo> type);
 
-  void add_parameter(std::shared_ptr<VariableEntry> parameter);
-  std::vector<std::shared_ptr<VariableEntry>>& get_parameters();
+  void add_parameter(std::pair<bool, std::shared_ptr<VariableEntry>> parameter);
+  std::vector<std::pair<bool, std::shared_ptr<VariableEntry>>>& get_parameters();
+
   bool is_forward();
 };
 

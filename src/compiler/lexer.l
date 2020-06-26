@@ -17,6 +17,8 @@
 
 int line_num = 1;
 
+static char fix_char(char input[]);
+static std::string fix_string(char input[]);
 static void lexer_error(const std::string& msg);
 %}
 
@@ -89,8 +91,8 @@ SINGLE_CHARACTER {PRINTABLE}|{ESCAPE_SEQ}
 {ALPHA}({ALPHA}|{DIGIT}|_)*   return yy::parser::make_ID(std::string(yytext));
 {DIGIT}+                      return yy::parser::make_INT_CONST(std::stoi(yytext));
 {DIGIT}+\.{DIGIT}+{EXPONENT}? return yy::parser::make_REAL_CONST(std::stod(yytext));
-\'{SINGLE_CHARACTER}?\'       return yy::parser::make_CHAR_CONST(yytext[0]);
-\"{SINGLE_CHARACTER}*\"       return yy::parser::make_STRING_LITERAL(std::string(yytext));
+\'{SINGLE_CHARACTER}?\'       return yy::parser::make_CHAR_CONST(fix_char(yytext));
+\"{SINGLE_CHARACTER}*\"       return yy::parser::make_STRING_LITERAL(fix_string(yytext));
 
 [ \t\r]          /* nothing */
 \n               ++line_num;
@@ -113,6 +115,30 @@ SINGLE_CHARACTER {PRINTABLE}|{ESCAPE_SEQ}
 
 %%
 
+char fix_char(char input[]) {
+  std::string str = std::string(input);
+  switch (str[1]) {
+    case '\\':
+    {
+      switch (str[2]) {
+        case 'n':  return '\n';
+        case 't':  return '\t';
+        case 'r':  return '\r';
+        case '0':  return '\0';
+        case '\\': return '\\';
+        case '\'': return '\'';
+        case '\"': return '\"';
+      }
+    }
+    default:
+      return str[1];
+  }
+}
+
+std::string fix_string(char input[]) {
+  std::string str = std::string(input);
+  return str.substr(1, str.size() - 2);
+}
 
 // Local lexer error function because parser's yyerror needs a parser object instance
 void lexer_error(const std::string& msg) {

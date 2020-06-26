@@ -1,5 +1,5 @@
-#ifndef __SCOPE_HPP__
-#define __SCOPE_HPP__
+#ifndef __SYMBOL_SCOPE_HPP__
+#define __SYMBOL_SCOPE_HPP__
 
 #include <map>
 #include <memory>
@@ -9,12 +9,12 @@
 class Entry;
 class TypeInfo;
 
-class Scope {
+class SymbolScope {
   std::set<std::string> labels;
   std::map<std::string, std::shared_ptr<Entry>> entries;
 
 public:
-  bool insert(std::string label);
+  bool add_label(std::string label);
   bool has_label(std::string label);
 
   bool insert(std::string name, std::shared_ptr<Entry> entry);
