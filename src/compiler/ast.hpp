@@ -5,12 +5,16 @@
 #include <vector>
 #include <memory>
 
-#include <llvm/IR/Value.h>
+namespace llvm {
+  class Value;
+}
 
 enum class UnOp;
 enum class BinOp;
 
 class TypeInfo;
+
+struct var_info;
 
 class Node {
   int line;
@@ -394,10 +398,17 @@ public:
 // Two types of functions: procedures and functions
 // Procedures don't return a result
 class Fun : public Local {
+  // For each function during the semantic pass we do record keeping for its nesting
+  // level and all the variables that are visible to it from previous scopes
+  int nesting_level;
+  std::vector<std::shared_ptr<var_info>> prev_scope_vars;
+
+  // Header
   std::string fun_name;
   std::shared_ptr<TypeInfo> return_type;
   std::vector<std::unique_ptr<Formal>> formal_parameters;
 
+  //Body
   std::unique_ptr<Body> body;
   bool forward_declaration;
 

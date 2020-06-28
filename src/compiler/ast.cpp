@@ -19,12 +19,8 @@
 #include <llvm/Transforms/Utils.h>
 
 #include "ast.hpp"
-#include "codegen_entry.hpp"
-#include "codegen_scope.hpp"
 #include "codegen_table.hpp"
 #include "lexer.hpp"
-#include "symbol_entry.hpp"
-#include "symbol_scope.hpp"
 #include "symbol_table.hpp"
 #include "types.hpp"
 
@@ -793,8 +789,7 @@ void Fun::semantic() {
   for (auto& formal : this->formal_parameters) {
     for (auto& name : formal->get_names()) {
       auto entry = std::make_shared<VariableEntry>(formal->get_type());
-      fun_entry->add_parameter(
-          std::make_pair(formal->get_pass_by_reference(), entry));
+      fun_entry->add_parameter(std::make_pair(formal->get_pass_by_reference(), entry));
     }
   }
 
@@ -804,7 +799,11 @@ void Fun::semantic() {
 
   // Open function's scope and insert the local variable's and the result variable if not a procedure
   if (!this->forward_declaration) {
+    this->prev_scope_vars = symbol_table.get_prev_scope_vars();
+
     symbol_table.open_scope();
+
+    this->nesting_level = symbol_table.get_nesting_level();
 
     for (auto& formal : this->formal_parameters)
       for (auto& name : formal->get_names())
@@ -1046,6 +1045,7 @@ Value* AddressOf::codegen() const {
 // Helper function for the two call nodes
 Value* call_codegen(const std::string& fun_name, const std::vector<expr_ptr>& call_parameters, const int& line) {
   auto fun_def = codegen_table.lookup_fun(fun_name);
+  auto prev_scope_var = fun_def->get_prev_scope_vars();
   auto fun_parameters = fun_def->get_parameters();
   Function* F = fun_def->get_function();
 
@@ -1449,7 +1449,7 @@ Value* Body::codegen() const {
 Value* Fun::codegen() const {
   BasicBlock* Parent = Builder.GetInsertBlock();
 
-  // Create function once
+  // Create function only once
   if (!codegen_table.lookup_fun(this->fun_name)) {
     std::vector<Type*> args;
     std::vector<bool> parameters;
