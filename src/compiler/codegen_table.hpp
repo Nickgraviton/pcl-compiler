@@ -14,23 +14,25 @@ namespace llvm {
   class Value;
 }
 
-struct var_info;
+class VarInfo;
 
 class FunDef {
   llvm::Type* return_type;
   std::vector<bool> parameters;
   llvm::Function* F;
-  std::vector<std::shared_ptr<var_info>> prev_scope_vars;
+  std::vector<std::shared_ptr<VarInfo>> prev_scope_vars;
+  int nesting_level;
 
 public:
-  FunDef(llvm::Type* return_type, std::vector<bool>& parameters, llvm::Function* F);
-
-  void set_prev_scope_vars(std::vector<std::shared_ptr<var_info>>& prev_scope_vars);
+  FunDef(llvm::Type* return_type, std::vector<bool>& parameters, llvm::Function* F, std::vector<std::shared_ptr<VarInfo>> prev_scope_vars, int nesting_level);
+  
+  void set_prev_scope_vars(std::vector<std::shared_ptr<VarInfo>>& prev_scope_vars);
 
   llvm::Type* get_return_type();
   std::vector<bool>& get_parameters();
   llvm::Function* get_function();
-  std::vector<std::shared_ptr<var_info>>& get_prev_scope_vars();
+  std::vector<std::shared_ptr<VarInfo>>& get_prev_scope_vars();
+  int get_nesting_level();
 };
 
 class CodegenScope {
@@ -46,12 +48,16 @@ public:
   llvm::Value* lookup_var(std::string name);
   llvm::BasicBlock* lookup_label(std::string name);
   std::shared_ptr<FunDef> lookup_fun(std::string name);
+
+  std::string reverse_lookup_fun(llvm::Function* F);
 };
 
 class CodegenTable {
   std::vector<CodegenScope> scopes;
 
 public:
+  int get_nesting_level();
+
   void open_scope();
   void close_scope();
 
@@ -62,6 +68,8 @@ public:
   llvm::Value* lookup_var(std::string name);
   llvm::BasicBlock* lookup_label(std::string name);
   std::shared_ptr<FunDef> lookup_fun(std::string name);
+
+  std::string reverse_lookup_fun(llvm::Function* F);
 };
 
 #endif

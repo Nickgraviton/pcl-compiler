@@ -5,7 +5,7 @@
 - ~~Add optimization passes~~
 - Implement dynamic memory allocation
 - Add library functions
-- Allow access to variables from previous scopes
+- ~~Allow access to variables from previous scopes~~
 
 ## Outline:
 - ~~Complete AST adding all necessary nodes and create a tree while parsing~~

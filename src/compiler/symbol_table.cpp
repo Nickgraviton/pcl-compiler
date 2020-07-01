@@ -8,11 +8,24 @@
 #include "symbol_table.hpp"
 #include "types.hpp"
 
+using var_ptr = std::shared_ptr<VarInfo>;
 using entry_ptr = std::shared_ptr<Entry>;
 using type_ptr = std::shared_ptr<TypeInfo>;
 
-var_info::var_info(std::string name, int nesting_level, type_ptr type)
+VarInfo::VarInfo(std::string name, int nesting_level, type_ptr type)
   : name(name), nesting_level(nesting_level), type(type) {}
+
+std::string VarInfo::get_name() {
+  return this->name;
+}
+
+int VarInfo::get_nesting_level() {
+  return this->nesting_level;
+}
+
+type_ptr VarInfo::get_type() {
+  return this->type;
+}
 
 Entry::Entry(type_ptr type)
   : type(type) {}
@@ -66,7 +79,9 @@ bool SymbolScope::insert(std::string name, entry_ptr entry) {
   if (it != this->entries.end()) {
     return false;
   } else {
-    this->vars.push_back(name);
+    if (std::dynamic_pointer_cast<VariableEntry>(entry))
+      this->vars.push_back(name);
+
     this->entries[name] = entry;
     return true;
   }
@@ -84,12 +99,13 @@ int SymbolTable::get_nesting_level() {
   return this->scopes.size();
 }
 
-std::vector<std::shared_ptr<var_info>> SymbolTable::get_prev_scope_vars() {
-  std::vector<std::shared_ptr<var_info>> result;
+std::vector<var_ptr> SymbolTable::get_prev_scope_vars() {
+  std::vector<var_ptr> result;
 
-  for (int i = 0; i < this->scopes.size(); i++)
-    for (auto& var : this->scopes[i].get_vars())
-      result.push_back(std::make_shared<var_info>(var, i, this->lookup(var)->get_type()));
+  for (int i = scopes.size() - 1; i >= 0; i--)
+    for (auto& name : this->scopes[i].get_vars())
+      if (name != "result")
+        result.push_back(std::make_shared<VarInfo>(name, i + 1, this->lookup(name)->get_type()));
 
   return result;
 }

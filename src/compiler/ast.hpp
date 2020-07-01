@@ -13,8 +13,7 @@ enum class UnOp;
 enum class BinOp;
 
 class TypeInfo;
-
-struct var_info;
+class VarInfo;
 
 class Node {
   int line;
@@ -401,7 +400,7 @@ class Fun : public Local {
   // For each function during the semantic pass we do record keeping for its nesting
   // level and all the variables that are visible to it from previous scopes
   int nesting_level;
-  std::vector<std::shared_ptr<var_info>> prev_scope_vars;
+  std::vector<std::shared_ptr<VarInfo>> prev_scope_vars;
 
   // Header
   std::string fun_name;

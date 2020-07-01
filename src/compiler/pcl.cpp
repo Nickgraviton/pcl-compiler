@@ -10,7 +10,7 @@ int main() {
   yy::parser parser;
   int result = parser.parse();
   if (result == 0) {
-    root->print(std::cout, 0);
+    //root->print(std::cout, 0);
     std::cout << "Parsing successful." << std::endl;
     root->semantic();
     root->codegen();

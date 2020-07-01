@@ -10,12 +10,17 @@
 
 class TypeInfo;
 
-struct var_info {
-  var_info(std::string name, int nesting_level, std::shared_ptr<TypeInfo> type);
-
+class VarInfo {
   std::string name;
   int nesting_level;
   std::shared_ptr<TypeInfo> type;
+
+public:
+  VarInfo(std::string name, int nesting_level, std::shared_ptr<TypeInfo> type);
+
+  std::string get_name();
+  int get_nesting_level();
+  std::shared_ptr<TypeInfo> get_type();
 };
 
 class Entry {
@@ -66,7 +71,7 @@ class SymbolTable {
 
 public:
   int get_nesting_level();
-  std::vector<std::shared_ptr<var_info>> get_prev_scope_vars();
+  std::vector<std::shared_ptr<VarInfo>> get_prev_scope_vars();
 
   void open_scope();
   void close_scope();

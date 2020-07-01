@@ -797,7 +797,7 @@ void Fun::semantic() {
   if (!success)
     error(this->fun_name + " has already been declared and is not a function", this->get_line());
 
-  // Open function's scope and insert the local variable's and the result variable if not a procedure
+  // Open function's scope and insert the local variables and the result variable if not a procedure
   if (!this->forward_declaration) {
     this->prev_scope_vars = symbol_table.get_prev_scope_vars();
 
@@ -1045,11 +1045,114 @@ Value* AddressOf::codegen() const {
 // Helper function for the two call nodes
 Value* call_codegen(const std::string& fun_name, const std::vector<expr_ptr>& call_parameters, const int& line) {
   auto fun_def = codegen_table.lookup_fun(fun_name);
-  auto prev_scope_var = fun_def->get_prev_scope_vars();
+  auto prev_scope_vars = fun_def->get_prev_scope_vars();
   auto fun_parameters = fun_def->get_parameters();
+  auto callee_nesting_level = fun_def->get_nesting_level();
+
   Function* F = fun_def->get_function();
 
   std::vector<Value*> ArgsV;
+
+  Value* prev_frame = codegen_table.lookup_var("$frame");
+  if (!prev_frame) {
+    StructType* st = StructType::get(TheContext, std::vector<Type*>());
+    prev_frame = Builder.CreateAlloca(st, nullptr, "prev_frame");
+  }
+
+  std::vector<Type*> types;
+  Value* new_frame = nullptr;
+
+  int current_depth = codegen_table.get_nesting_level();
+  if (current_depth > callee_nesting_level) {
+    // If callee is in a previous scope, we pop the scopes that are not visible to it
+    int callee_nesting_difference = current_depth - callee_nesting_level;
+
+    for (int i = 0; i < callee_nesting_difference; i++) {
+      new_frame = Builder.CreateStructGEP(prev_frame, 0);
+      new_frame = Builder.CreateLoad(prev_frame);
+    }
+  } else if (current_depth == callee_nesting_level) {
+    // If callee is in the same depth we keep only the variables visible to the callee
+    Function* this_function = Builder.GetInsertBlock()->getParent();
+    std::string current_function = codegen_table.reverse_lookup_fun(this_function);
+
+    if (current_function == fun_name) {
+      new_frame = prev_frame;
+    } else {
+      Value* parent_frame = Builder.CreateStructGEP(prev_frame, 0);
+      parent_frame = Builder.CreateLoad(parent_frame);
+
+      types.push_back(parent_frame->getType());
+
+      for (auto& var : prev_scope_vars) {
+        if (var->get_nesting_level() == callee_nesting_level - 1) {
+          Type* var_type = to_llvm_type(var->get_type());
+
+          if (!var_type->isPointerTy())
+            var_type = var_type->getPointerTo();
+
+          types.push_back(var_type);
+        }
+      }
+
+      StructType* st = StructType::get(TheContext, types);
+      new_frame = Builder.CreateAlloca(st, nullptr, "new_frame");
+
+      Value* first_pos = Builder.CreateStructGEP(new_frame, 0);
+      Builder.CreateStore(parent_frame, first_pos);
+
+      auto my_vars = codegen_table.lookup_fun(current_function)->get_prev_scope_vars();
+      int i = 0;
+      for (auto& my_var : my_vars) {
+        int j = 0;
+        for (auto& callee_var : prev_scope_vars) {
+          if (callee_var->get_name() == my_var->get_name()) {
+            Value* new_v = Builder.CreateStructGEP(new_frame, j + 1);
+            Value* old_v = Builder.CreateStructGEP(prev_frame, i + 1);
+            old_v = Builder.CreateLoad(old_v);
+
+            Builder.CreateStore(old_v, new_v);
+            break;
+          }
+          j++;
+        }
+        i++;
+      }
+    }
+  } else {
+    types.push_back(prev_frame->getType());
+
+    for (auto& var : prev_scope_vars) {
+      if (var->get_nesting_level() == callee_nesting_level - 1) {
+        Type* var_type = to_llvm_type(var->get_type());
+
+        if (!var_type->isPointerTy())
+          var_type = var_type->getPointerTo();
+
+        types.push_back(var_type);
+      }
+    }
+
+    StructType* st = StructType::get(TheContext, types);
+    new_frame = Builder.CreateAlloca(st, nullptr, "new_frame");
+  
+    Value* first_pos = Builder.CreateStructGEP(new_frame, 0);
+    Builder.CreateStore(prev_frame, first_pos);
+
+    int position = 1;
+    for (auto& var : prev_scope_vars) {
+      if (var->get_nesting_level() == current_depth) {
+        Value* current_position = Builder.CreateStructGEP(new_frame, position);
+        Value* local_var = codegen_table.lookup_var(var->get_name());
+
+        Builder.CreateStore(local_var, current_position);
+
+        position++;
+      }
+    }
+  }
+  
+  ArgsV.push_back(new_frame);
 
   int call_param_count = call_parameters.size();
 
@@ -1347,7 +1450,6 @@ Value* Assign::codegen() const {
   Value* right = this->right->codegen();
 
   right = (right->getType()->isPointerTy()) ? Builder.CreateLoad(right) : right;
-
   Builder.CreateStore(right, left);
   return nullptr;
 }
@@ -1452,6 +1554,28 @@ Value* Fun::codegen() const {
   // Create function only once
   if (!codegen_table.lookup_fun(this->fun_name)) {
     std::vector<Type*> args;
+
+    // Collect previous scope variables and put them inside nested structs
+    std::vector<std::vector<Type*>> scope_types(this->nesting_level - 1, std::vector<Type*>());
+
+    for (auto& var : this->prev_scope_vars) {
+      Type* var_type = to_llvm_type(var->get_type());
+      if (!var_type->isPointerTy())
+        var_type = var_type->getPointerTo();
+
+      scope_types[var->get_nesting_level() - 1].push_back(var_type);
+    }
+
+    Type* current_st = StructType::get(TheContext)->getPointerTo();
+    for (auto& scope : scope_types) {
+      std::vector<Type*> types;
+      types.push_back(current_st);
+      types.insert(types.end(), scope.begin(), scope.end());
+      current_st = StructType::get(TheContext, types)->getPointerTo();
+    }
+
+    args.push_back(current_st);
+
     std::vector<bool> parameters;
 
     for (auto& formal : this->formal_parameters) {
@@ -1471,7 +1595,7 @@ Value* Fun::codegen() const {
     FunctionType* FT = FunctionType::get(ret_type, args, false);
     Function* F = Function::Create(FT, Function::PrivateLinkage, this->fun_name, TheModule.get());
 
-    auto fun_def = std::make_shared<FunDef>(ret_type, parameters, F);
+    auto fun_def = std::make_shared<FunDef>(ret_type, parameters, F, this->prev_scope_vars, this->nesting_level);
 
     codegen_table.insert_fun(this->fun_name, fun_def);
   }
@@ -1486,9 +1610,10 @@ Value* Fun::codegen() const {
     BasicBlock* BB = BasicBlock::Create(TheContext, "entry", TheFunction);
     Builder.SetInsertPoint(BB);
 
-    FunctionType* FT = TheFunction->getFunctionType();
+    FunctionType* FT = TheFunction->getFunctionType();     
 
-    unsigned i = 0;
+    // Retrieve arguments
+    unsigned i = 1;
     for (auto& formal : this->formal_parameters) {
       for (auto& name : formal->get_names()) {
         Type* type = FT->getParamType(i);
@@ -1500,17 +1625,54 @@ Value* Fun::codegen() const {
           alloca = Builder.CreateLoad(alloca);
 
         codegen_table.insert_var(name, alloca);
-
-        Type* ret_type = FT->getReturnType();
-        if (!ret_type->isVoidTy()) {
-          AllocaInst* ret = Builder.CreateAlloca(ret_type, nullptr, "result");
-          codegen_table.insert_var("result", ret);
-        } else {
-          codegen_table.insert_var("result", nullptr);
-        }
-
+        
         i++;
       }
+    }
+
+    // Retrieve enclosing scope variables
+    Value* next_frame = TheFunction->getArg(0);
+    codegen_table.insert_var("$frame", next_frame);
+
+    int current_depth = this->nesting_level - 1;
+    int variable_position = 1;
+
+    // Start loading variables from previous scopes starting from the innermost
+    // scope and moving outwards
+    for (auto& var : this->prev_scope_vars) {
+      int nesting_level = var->get_nesting_level();
+
+      // Nesting level change so we reset the variable position and move to the next frame
+      if (nesting_level != current_depth) {
+        next_frame = Builder.CreateStructGEP(next_frame, 0);
+        next_frame = Builder.CreateLoad(next_frame);
+
+        variable_position = 1;
+      }
+
+      current_depth = nesting_level;
+      
+      Type* type = to_llvm_type(var->get_type());
+
+      // Ignore shadowed variables that appear in previous scopes but are hidden due to redeclaration
+      if (!codegen_table.lookup_var(var->get_name())) {
+        Value* v = Builder.CreateStructGEP(next_frame, variable_position);
+
+        if (!type->isPointerTy())
+          v = Builder.CreateLoad(v);
+
+        codegen_table.insert_var(var->get_name(), v);
+      }
+
+      variable_position++;
+    }
+
+    Type* ret_type = FT->getReturnType();
+    if (!ret_type->isVoidTy()) {
+      AllocaInst* ret = Builder.CreateAlloca(ret_type, nullptr, "result");
+      codegen_table.insert_var("result", ret);
+    } else {
+      codegen_table.insert_var("result", nullptr);
     }
 
     this->body->codegen();
