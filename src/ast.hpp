@@ -477,8 +477,15 @@ class Program : public Stmt {
   std::string name;
   std::unique_ptr<Body> body;
 
+  std::string file_name;
+  bool optimize, asm_output, imm_output;
 public:
   Program(std::string name, std::unique_ptr<Body> body);
+
+  void set_file_name(std::string);
+  void set_optimize(bool optimize);
+  void set_asm_output(bool asm_output);
+  void set_imm_output(bool imm_output);
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;

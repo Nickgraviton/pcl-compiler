@@ -39,18 +39,18 @@ procedure PrintArray (var msg : array of char;
   : integer);
   var i : integer;
 begin
-  (*writeString(msg);*)
+  writeString(msg);
   i := 0;
   while i < n do
   begin
     if i > 0 then
-      (*writeString(", ");*)
-    (*writeInteger(x[i]);*)
+      writeString(", ");
+    writeInteger(x[i]);
 
 
     i := i+1
   end;
-  (*writeString("\n");*)
+  writeString("\n");
 end;
 var i
 : integer;

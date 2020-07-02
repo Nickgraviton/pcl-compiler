@@ -14,8 +14,11 @@
 
 using namespace llvm;
 
+FunDef::FunDef(Type* return_type, std::vector<bool>& parameters, Function* F)
+  : return_type(return_type), parameters(parameters), F(F), lib_fun(true) {}
+
 FunDef::FunDef(Type* return_type, std::vector<bool>& parameters, Function* F, std::vector<std::shared_ptr<VarInfo>> prev_scope_vars, int nesting_level)
-  : return_type(return_type), parameters(parameters), F(F), prev_scope_vars(prev_scope_vars), nesting_level(nesting_level) {}
+  : return_type(return_type), parameters(parameters), F(F), prev_scope_vars(prev_scope_vars), nesting_level(nesting_level), lib_fun(false) {}
 
 void FunDef::set_prev_scope_vars(std::vector<std::shared_ptr<VarInfo>>& prev_scope_vars) {
   this->prev_scope_vars = prev_scope_vars;
@@ -39,6 +42,10 @@ std::vector<std::shared_ptr<VarInfo>>& FunDef::get_prev_scope_vars() {
 
 int FunDef::get_nesting_level() {
   return this->nesting_level;
+}
+
+bool FunDef::is_lib_fun() {
+  return this->lib_fun;
 }
 
 void CodegenScope::insert_var(std::string name, Value* alloca) {

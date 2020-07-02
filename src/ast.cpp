@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -185,7 +186,23 @@ Dispose::Dispose(bool has_brackets, expr_ptr l_value)
   : Stmt(), has_brackets(has_brackets), l_value(std::move(l_value)) {}
 
 Program::Program(std::string name, body_ptr body)
-  : Stmt(), name(name), body(std::move(body)) {}
+  : Stmt(), name(name), body(std::move(body)), optimize(false), asm_output(false), imm_output(false) {}
+
+void Program::set_file_name(std::string file_name) {
+  this->file_name = file_name;
+}
+
+void Program::set_optimize(bool optimize) {
+  this->optimize = optimize;
+}
+
+void Program::set_asm_output(bool asm_output) {
+  this->asm_output = asm_output;
+}
+
+void Program::set_imm_output(bool imm_output) {
+  this->imm_output = imm_output;
+}
 
 //---------------------------------------------------------------------//
 //----------------------------Print------------------------------------//
@@ -420,8 +437,123 @@ void Program::print(std::ostream& out, int level) const {
 //---------------------------Semantic----------------------------------//
 //---------------------------------------------------------------------//
 
+static void semantic_library_functions() {
+  auto fun_entry = std::make_shared<FunctionEntry>(false, nullptr);
+  auto parameter = std::make_pair(false, std::make_shared<VariableEntry>(std::make_shared<IntType>()));
+  fun_entry->add_parameter(parameter);
+  symbol_table.insert("writeInteger", fun_entry);
+
+  fun_entry = std::make_shared<FunctionEntry>(false, nullptr);
+  parameter = std::make_pair(false, std::make_shared<VariableEntry>(std::make_shared<BoolType>()));
+  fun_entry->add_parameter(parameter);
+  symbol_table.insert("writeBoolean", fun_entry);
+
+  fun_entry = std::make_shared<FunctionEntry>(false, nullptr);
+  parameter = std::make_pair(false, std::make_shared<VariableEntry>(std::make_shared<CharType>()));
+  fun_entry->add_parameter(parameter);
+  symbol_table.insert("writeChar", fun_entry);
+
+  fun_entry = std::make_shared<FunctionEntry>(false, nullptr);
+  parameter = std::make_pair(false, std::make_shared<VariableEntry>(std::make_shared<RealType>()));
+  fun_entry->add_parameter(parameter);
+  symbol_table.insert("writeReal", fun_entry);
+
+  fun_entry = std::make_shared<FunctionEntry>(false, nullptr);
+  parameter = std::make_pair(true, std::make_shared<VariableEntry>(std::make_shared<IArrType>(std::make_shared<CharType>())));
+  fun_entry->add_parameter(parameter);
+  symbol_table.insert("writeString", fun_entry);
+
+  fun_entry = std::make_shared<FunctionEntry>(false, std::make_shared<IntType>());
+  symbol_table.insert("readInteger", fun_entry);
+
+  fun_entry = std::make_shared<FunctionEntry>(false, std::make_shared<BoolType>());
+  symbol_table.insert("readBoolean", fun_entry);
+
+  fun_entry = std::make_shared<FunctionEntry>(false, std::make_shared<CharType>());
+  symbol_table.insert("readChar", fun_entry);
+
+  fun_entry = std::make_shared<FunctionEntry>(false, std::make_shared<RealType>());
+  symbol_table.insert("readReal", fun_entry);
+
+  fun_entry = std::make_shared<FunctionEntry>(false, nullptr);
+  parameter = std::make_pair(false, std::make_shared<VariableEntry>(std::make_shared<IntType>()));
+  fun_entry->add_parameter(parameter);
+
+  parameter = std::make_pair(true, std::make_shared<VariableEntry>(std::make_shared<IArrType>(std::make_shared<CharType>())));
+  fun_entry->add_parameter(parameter);
+  symbol_table.insert("readString", fun_entry);
+
+  fun_entry = std::make_shared<FunctionEntry>(false, std::make_shared<IntType>());
+  parameter = std::make_pair(false, std::make_shared<VariableEntry>(std::make_shared<IntType>()));
+  fun_entry->add_parameter(parameter);
+  symbol_table.insert("abs", fun_entry);
+
+  fun_entry = std::make_shared<FunctionEntry>(false, std::make_shared<RealType>());
+  parameter = std::make_pair(false, std::make_shared<VariableEntry>(std::make_shared<RealType>()));
+  fun_entry->add_parameter(parameter);
+  symbol_table.insert("fabs", fun_entry);
+
+  fun_entry = std::make_shared<FunctionEntry>(false, std::make_shared<RealType>());
+  parameter = std::make_pair(false, std::make_shared<VariableEntry>(std::make_shared<RealType>()));
+  fun_entry->add_parameter(parameter);
+  symbol_table.insert("sqrt", fun_entry);
+
+  fun_entry = std::make_shared<FunctionEntry>(false, std::make_shared<RealType>());
+  parameter = std::make_pair(false, std::make_shared<VariableEntry>(std::make_shared<RealType>()));
+  fun_entry->add_parameter(parameter);
+  symbol_table.insert("sin", fun_entry);
+
+  fun_entry = std::make_shared<FunctionEntry>(false, std::make_shared<RealType>());
+  parameter = std::make_pair(false, std::make_shared<VariableEntry>(std::make_shared<RealType>()));
+  fun_entry->add_parameter(parameter);
+  symbol_table.insert("cos", fun_entry);
+
+  fun_entry = std::make_shared<FunctionEntry>(false, std::make_shared<RealType>());
+  parameter = std::make_pair(false, std::make_shared<VariableEntry>(std::make_shared<RealType>()));
+  fun_entry->add_parameter(parameter);
+  symbol_table.insert("tan", fun_entry);
+
+  fun_entry = std::make_shared<FunctionEntry>(false, std::make_shared<RealType>());
+  parameter = std::make_pair(false, std::make_shared<VariableEntry>(std::make_shared<RealType>()));
+  fun_entry->add_parameter(parameter);
+  symbol_table.insert("arctan", fun_entry);
+
+  fun_entry = std::make_shared<FunctionEntry>(false, std::make_shared<RealType>());
+  parameter = std::make_pair(false, std::make_shared<VariableEntry>(std::make_shared<RealType>()));
+  fun_entry->add_parameter(parameter);
+  symbol_table.insert("exp", fun_entry);
+
+  fun_entry = std::make_shared<FunctionEntry>(false, std::make_shared<RealType>());
+  parameter = std::make_pair(false, std::make_shared<VariableEntry>(std::make_shared<RealType>()));
+  fun_entry->add_parameter(parameter);
+  symbol_table.insert("ln", fun_entry);
+
+  fun_entry = std::make_shared<FunctionEntry>(false, std::make_shared<RealType>());
+  symbol_table.insert("pi", fun_entry);
+
+  fun_entry = std::make_shared<FunctionEntry>(false, std::make_shared<IntType>());
+  parameter = std::make_pair(false, std::make_shared<VariableEntry>(std::make_shared<RealType>()));
+  fun_entry->add_parameter(parameter);
+  symbol_table.insert("trunc", fun_entry);
+
+  fun_entry = std::make_shared<FunctionEntry>(false, std::make_shared<IntType>());
+  parameter = std::make_pair(false, std::make_shared<VariableEntry>(std::make_shared<RealType>()));
+  fun_entry->add_parameter(parameter);
+  symbol_table.insert("round", fun_entry);
+
+  fun_entry = std::make_shared<FunctionEntry>(false, std::make_shared<IntType>());
+  parameter = std::make_pair(false, std::make_shared<VariableEntry>(std::make_shared<CharType>()));
+  fun_entry->add_parameter(parameter);
+  symbol_table.insert("ord", fun_entry);
+
+  fun_entry = std::make_shared<FunctionEntry>(false, std::make_shared<CharType>());
+  parameter = std::make_pair(false, std::make_shared<VariableEntry>(std::make_shared<IntType>()));
+  fun_entry->add_parameter(parameter);
+  symbol_table.insert("chr", fun_entry);
+}
+
 // Helper error function
-void error(const std::string& msg, const int& line) {
+static void error(const std::string& msg, const int& line) {
   std::cerr << "Line: " << line << " Error: " << msg << std::endl;
   exit(1);
 }
@@ -874,6 +1006,8 @@ void Dispose::semantic() {
 void Program::semantic() {
   symbol_table.open_scope();
 
+  semantic_library_functions();
+
   this->body->semantic();
 
   symbol_table.close_scope();
@@ -907,7 +1041,7 @@ static ConstantFP* c64(double d) {
   return ConstantFP::get(TheContext, APFloat(d));
 }
 
-static Type* to_llvm_type(std::shared_ptr<TypeInfo> type) {
+static Type* to_llvm_type(type_ptr type) {
   if (!type)
     return Type::getVoidTy(TheContext);
 
@@ -940,14 +1074,18 @@ static Type* to_llvm_type(std::shared_ptr<TypeInfo> type) {
   }
 }
 
-static void init_module_and_pass_manager() {
+static void init_module_and_pass_manager(bool optimize) {
   TheModule = std::make_unique<Module>("PCL program", TheContext);
 
   TheFPM = std::make_unique<legacy::FunctionPassManager>(TheModule.get());
-  TheFPM->add(createPromoteMemoryToRegisterPass());
-  TheFPM->add(createInstructionCombiningPass());
-  TheFPM->add(createGVNPass());
-  TheFPM->add(createCFGSimplificationPass());
+
+  if (optimize) {
+    TheFPM->add(createPromoteMemoryToRegisterPass());
+    TheFPM->add(createInstructionCombiningPass());
+    TheFPM->add(createGVNPass());
+    TheFPM->add(createCFGSimplificationPass());
+  }
+
   TheFPM->doInitialization();
 
   InitializeAllTargetInfos();
@@ -975,6 +1113,221 @@ static void init_module_and_pass_manager() {
   auto TheTargetMachine = Target->createTargetMachine(TargetTriple, CPU, Features, opt, RM);
 
   TheModule->setDataLayout(TheTargetMachine->createDataLayout());
+}
+
+static void codegen_library_functions() {
+  Type* ret_type;
+  std::vector<Type*> args;
+  std::vector<bool> parameters;
+  FunctionType* FT;
+  Function* F;
+
+  ret_type = Type::getVoidTy(TheContext);
+  args = std::vector<Type*>{i32};
+  parameters = std::vector<bool>{false};
+  FT = FunctionType::get(ret_type, args, false);
+  F = Function::Create(FT, Function::ExternalLinkage, "writeInteger", TheModule.get());
+
+  codegen_table.insert_fun("writeInteger",
+      std::make_shared<FunDef>(ret_type, parameters, F));
+
+  ret_type = Type::getVoidTy(TheContext);
+  args = std::vector<Type*>{i8};
+  parameters = std::vector<bool>{false};
+  FT = FunctionType::get(ret_type, args, false);
+  F = Function::Create(FT, Function::ExternalLinkage, "writeBoolean", TheModule.get());
+
+  codegen_table.insert_fun("writeBoolean",
+      std::make_shared<FunDef>(ret_type, parameters, F));
+
+  ret_type = Type::getVoidTy(TheContext);
+  args = std::vector<Type*>{i8};
+  parameters = std::vector<bool>{false};
+  FT = FunctionType::get(ret_type, args, false);
+  F = Function::Create(FT, Function::ExternalLinkage, "writeChar", TheModule.get());
+
+  codegen_table.insert_fun("writeChar",
+      std::make_shared<FunDef>(ret_type, parameters, F));
+
+  ret_type = Type::getVoidTy(TheContext);
+  args = std::vector<Type*>{f64};
+  parameters = std::vector<bool>{false};
+  FT = FunctionType::get(ret_type, args, false);
+  F = Function::Create(FT, Function::ExternalLinkage, "writeReal", TheModule.get());
+
+  codegen_table.insert_fun("writeReal",
+      std::make_shared<FunDef>(ret_type, parameters, F));
+
+  ret_type = Type::getVoidTy(TheContext);
+  args = std::vector<Type*>{i8->getPointerTo()};
+  parameters = std::vector<bool>{true};
+  FT = FunctionType::get(ret_type, args, false);
+  F = Function::Create(FT, Function::ExternalLinkage, "writeString", TheModule.get());
+
+  codegen_table.insert_fun("writeString",
+      std::make_shared<FunDef>(ret_type, parameters, F));
+
+  ret_type = i32;
+  args = std::vector<Type*>{};
+  parameters = std::vector<bool>{};
+  FT = FunctionType::get(ret_type, args, false);
+  F = Function::Create(FT, Function::ExternalLinkage, "readInteger", TheModule.get());
+
+  codegen_table.insert_fun("readInteger",
+      std::make_shared<FunDef>(ret_type, parameters, F));
+
+  ret_type = i8;
+  args = std::vector<Type*>{};
+  parameters = std::vector<bool>{};
+  FT = FunctionType::get(ret_type, args, false);
+  F = Function::Create(FT, Function::ExternalLinkage, "readBoolean", TheModule.get());
+
+  codegen_table.insert_fun("readBoolean",
+      std::make_shared<FunDef>(ret_type, parameters, F));
+
+  ret_type = i8;
+  args = std::vector<Type*>{};
+  parameters = std::vector<bool>{};
+  FT = FunctionType::get(ret_type, args, false);
+  F = Function::Create(FT, Function::ExternalLinkage, "readChar", TheModule.get());
+
+  codegen_table.insert_fun("readChar",
+      std::make_shared<FunDef>(ret_type, parameters, F));
+
+  ret_type = Type::getVoidTy(TheContext);
+  args = std::vector<Type*>{i32, i8->getPointerTo()};
+  parameters = std::vector<bool>{false, true};
+  FT = FunctionType::get(ret_type, args, false);
+  F = Function::Create(FT, Function::ExternalLinkage, "readString", TheModule.get());
+
+  codegen_table.insert_fun("readString",
+      std::make_shared<FunDef>(ret_type, parameters, F));
+
+  ret_type = i32;
+  args = std::vector<Type*>{i32};
+  parameters = std::vector<bool>{false};
+  FT = FunctionType::get(ret_type, args, false);
+  F = Function::Create(FT, Function::ExternalLinkage, "abs", TheModule.get());
+
+  codegen_table.insert_fun("abs",
+      std::make_shared<FunDef>(ret_type, parameters, F));
+
+  ret_type = f64;
+  args = std::vector<Type*>{f64};
+  parameters = std::vector<bool>{false};
+  FT = FunctionType::get(ret_type, args, false);
+  F = Function::Create(FT, Function::ExternalLinkage, "fabs", TheModule.get());
+
+  codegen_table.insert_fun("fabs",
+      std::make_shared<FunDef>(ret_type, parameters, F));
+
+  ret_type = f64;
+  args = std::vector<Type*>{f64};
+  parameters = std::vector<bool>{false};
+  FT = FunctionType::get(ret_type, args, false);
+  F = Function::Create(FT, Function::ExternalLinkage, "sqrt", TheModule.get());
+
+  codegen_table.insert_fun("sqrt",
+      std::make_shared<FunDef>(ret_type, parameters, F));
+
+  ret_type = f64;
+  args = std::vector<Type*>{f64};
+  parameters = std::vector<bool>{false};
+  FT = FunctionType::get(ret_type, args, false);
+  F = Function::Create(FT, Function::ExternalLinkage, "sin", TheModule.get());
+
+  codegen_table.insert_fun("sin",
+      std::make_shared<FunDef>(ret_type, parameters, F));
+
+  ret_type = f64;
+  args = std::vector<Type*>{f64};
+  parameters = std::vector<bool>{false};
+  FT = FunctionType::get(ret_type, args, false);
+  F = Function::Create(FT, Function::ExternalLinkage, "cos", TheModule.get());
+
+  codegen_table.insert_fun("cos",
+      std::make_shared<FunDef>(ret_type, parameters, F));
+
+  ret_type = f64;
+  args = std::vector<Type*>{f64};
+  parameters = std::vector<bool>{false};
+  FT = FunctionType::get(ret_type, args, false);
+  F = Function::Create(FT, Function::ExternalLinkage, "tan", TheModule.get());
+
+  codegen_table.insert_fun("tan",
+      std::make_shared<FunDef>(ret_type, parameters, F));
+
+  ret_type = f64;
+  args = std::vector<Type*>{f64};
+  parameters = std::vector<bool>{false};
+  FT = FunctionType::get(ret_type, args, false);
+  F = Function::Create(FT, Function::ExternalLinkage, "arctan", TheModule.get());
+
+  codegen_table.insert_fun("arctan",
+      std::make_shared<FunDef>(ret_type, parameters, F));
+
+  ret_type = f64;
+  args = std::vector<Type*>{f64};
+  parameters = std::vector<bool>{false};
+  FT = FunctionType::get(ret_type, args, false);
+  F = Function::Create(FT, Function::ExternalLinkage, "exp", TheModule.get());
+
+  codegen_table.insert_fun("exp",
+      std::make_shared<FunDef>(ret_type, parameters, F));
+
+  ret_type = f64;
+  args = std::vector<Type*>{f64};
+  parameters = std::vector<bool>{false};
+  FT = FunctionType::get(ret_type, args, false);
+  F = Function::Create(FT, Function::ExternalLinkage, "ln", TheModule.get());
+
+  codegen_table.insert_fun("ln",
+      std::make_shared<FunDef>(ret_type, parameters, F));
+
+  ret_type = f64;
+  args = std::vector<Type*>{};
+  parameters = std::vector<bool>{};
+  FT = FunctionType::get(ret_type, args, false);
+  F = Function::Create(FT, Function::ExternalLinkage, "pi", TheModule.get());
+
+  codegen_table.insert_fun("pi",
+      std::make_shared<FunDef>(ret_type, parameters, F));
+
+  ret_type = i32;
+  args = std::vector<Type*>{f64};
+  parameters = std::vector<bool>{false};
+  FT = FunctionType::get(ret_type, args, false);
+  F = Function::Create(FT, Function::ExternalLinkage, "trunc", TheModule.get());
+
+  codegen_table.insert_fun("trunc",
+      std::make_shared<FunDef>(ret_type, parameters, F));
+
+  ret_type = i32;
+  args = std::vector<Type*>{f64};
+  parameters = std::vector<bool>{false};
+  FT = FunctionType::get(ret_type, args, false);
+  F = Function::Create(FT, Function::ExternalLinkage, "round", TheModule.get());
+
+  codegen_table.insert_fun("round",
+      std::make_shared<FunDef>(ret_type, parameters, F));
+
+  ret_type = i32;
+  args = std::vector<Type*>{i8};
+  parameters = std::vector<bool>{false};
+  FT = FunctionType::get(ret_type, args, false);
+  F = Function::Create(FT, Function::ExternalLinkage, "ord", TheModule.get());
+
+  codegen_table.insert_fun("ord",
+      std::make_shared<FunDef>(ret_type, parameters, F));
+
+  ret_type = i8;
+  args = std::vector<Type*>{i32};
+  parameters = std::vector<bool>{false};
+  FT = FunctionType::get(ret_type, args, false);
+  F = Function::Create(FT, Function::ExternalLinkage, "chr", TheModule.get());
+
+  codegen_table.insert_fun("chr",
+      std::make_shared<FunDef>(ret_type, parameters, F));
 }
 
 //---------------------------------------------------------------------//
@@ -1048,41 +1401,81 @@ Value* call_codegen(const std::string& fun_name, const std::vector<expr_ptr>& ca
   auto prev_scope_vars = fun_def->get_prev_scope_vars();
   auto fun_parameters = fun_def->get_parameters();
   auto callee_nesting_level = fun_def->get_nesting_level();
+  auto is_lib_fun = fun_def->is_lib_fun();
 
   Function* F = fun_def->get_function();
 
   std::vector<Value*> ArgsV;
 
-  Value* prev_frame = codegen_table.lookup_var("$frame");
-  if (!prev_frame) {
-    StructType* st = StructType::get(TheContext, std::vector<Type*>());
-    prev_frame = Builder.CreateAlloca(st, nullptr, "prev_frame");
-  }
-
-  std::vector<Type*> types;
-  Value* new_frame = nullptr;
-
-  int current_depth = codegen_table.get_nesting_level();
-  if (current_depth > callee_nesting_level) {
-    // If callee is in a previous scope, we pop the scopes that are not visible to it
-    int callee_nesting_difference = current_depth - callee_nesting_level;
-
-    for (int i = 0; i < callee_nesting_difference; i++) {
-      new_frame = Builder.CreateStructGEP(prev_frame, 0);
-      new_frame = Builder.CreateLoad(prev_frame);
+  if (!is_lib_fun) {
+    Value* prev_frame = codegen_table.lookup_var("$frame");
+    if (!prev_frame) {
+      StructType* st = StructType::get(TheContext, std::vector<Type*>());
+      prev_frame = Builder.CreateAlloca(st, nullptr, "prev_frame");
     }
-  } else if (current_depth == callee_nesting_level) {
-    // If callee is in the same depth we keep only the variables visible to the callee
-    Function* this_function = Builder.GetInsertBlock()->getParent();
-    std::string current_function = codegen_table.reverse_lookup_fun(this_function);
 
-    if (current_function == fun_name) {
-      new_frame = prev_frame;
+    std::vector<Type*> types;
+    Value* new_frame = nullptr;
+
+    int current_depth = codegen_table.get_nesting_level();
+    if (current_depth > callee_nesting_level) {
+      // If callee is in a previous scope, we pop the scopes that are not visible to it
+      int callee_nesting_difference = current_depth - callee_nesting_level;
+
+      for (int i = 0; i < callee_nesting_difference; i++) {
+        new_frame = Builder.CreateStructGEP(prev_frame, 0);
+        new_frame = Builder.CreateLoad(prev_frame);
+      }
+    } else if (current_depth == callee_nesting_level) {
+      // If callee is in the same depth we keep only the variables visible to the callee
+      Function* this_function = Builder.GetInsertBlock()->getParent();
+      std::string current_function = codegen_table.reverse_lookup_fun(this_function);
+
+      if (current_function == fun_name) {
+        new_frame = prev_frame;
+      } else {
+        Value* parent_frame = Builder.CreateStructGEP(prev_frame, 0);
+        parent_frame = Builder.CreateLoad(parent_frame);
+
+        types.push_back(parent_frame->getType());
+
+        for (auto& var : prev_scope_vars) {
+          if (var->get_nesting_level() == callee_nesting_level - 1) {
+            Type* var_type = to_llvm_type(var->get_type());
+
+            if (!var_type->isPointerTy())
+              var_type = var_type->getPointerTo();
+
+            types.push_back(var_type);
+          }
+        }
+
+        StructType* st = StructType::get(TheContext, types);
+        new_frame = Builder.CreateAlloca(st, nullptr, "new_frame");
+
+        Value* first_pos = Builder.CreateStructGEP(new_frame, 0);
+        Builder.CreateStore(parent_frame, first_pos);
+
+        auto my_vars = codegen_table.lookup_fun(current_function)->get_prev_scope_vars();
+        int i = 0;
+        for (auto& my_var : my_vars) {
+          int j = 0;
+          for (auto& callee_var : prev_scope_vars) {
+            if (callee_var->get_name() == my_var->get_name()) {
+              Value* new_v = Builder.CreateStructGEP(new_frame, j + 1);
+              Value* old_v = Builder.CreateStructGEP(prev_frame, i + 1);
+              old_v = Builder.CreateLoad(old_v);
+
+              Builder.CreateStore(old_v, new_v);
+              break;
+            }
+            j++;
+          }
+          i++;
+        }
+      }
     } else {
-      Value* parent_frame = Builder.CreateStructGEP(prev_frame, 0);
-      parent_frame = Builder.CreateLoad(parent_frame);
-
-      types.push_back(parent_frame->getType());
+      types.push_back(prev_frame->getType());
 
       for (auto& var : prev_scope_vars) {
         if (var->get_nesting_level() == callee_nesting_level - 1) {
@@ -1097,62 +1490,25 @@ Value* call_codegen(const std::string& fun_name, const std::vector<expr_ptr>& ca
 
       StructType* st = StructType::get(TheContext, types);
       new_frame = Builder.CreateAlloca(st, nullptr, "new_frame");
-
+    
       Value* first_pos = Builder.CreateStructGEP(new_frame, 0);
-      Builder.CreateStore(parent_frame, first_pos);
+      Builder.CreateStore(prev_frame, first_pos);
 
-      auto my_vars = codegen_table.lookup_fun(current_function)->get_prev_scope_vars();
-      int i = 0;
-      for (auto& my_var : my_vars) {
-        int j = 0;
-        for (auto& callee_var : prev_scope_vars) {
-          if (callee_var->get_name() == my_var->get_name()) {
-            Value* new_v = Builder.CreateStructGEP(new_frame, j + 1);
-            Value* old_v = Builder.CreateStructGEP(prev_frame, i + 1);
-            old_v = Builder.CreateLoad(old_v);
+      int position = 1;
+      for (auto& var : prev_scope_vars) {
+        if (var->get_nesting_level() == current_depth) {
+          Value* current_position = Builder.CreateStructGEP(new_frame, position);
+          Value* local_var = codegen_table.lookup_var(var->get_name());
 
-            Builder.CreateStore(old_v, new_v);
-            break;
-          }
-          j++;
+          Builder.CreateStore(local_var, current_position);
+
+          position++;
         }
-        i++;
       }
     }
-  } else {
-    types.push_back(prev_frame->getType());
-
-    for (auto& var : prev_scope_vars) {
-      if (var->get_nesting_level() == callee_nesting_level - 1) {
-        Type* var_type = to_llvm_type(var->get_type());
-
-        if (!var_type->isPointerTy())
-          var_type = var_type->getPointerTo();
-
-        types.push_back(var_type);
-      }
-    }
-
-    StructType* st = StructType::get(TheContext, types);
-    new_frame = Builder.CreateAlloca(st, nullptr, "new_frame");
-  
-    Value* first_pos = Builder.CreateStructGEP(new_frame, 0);
-    Builder.CreateStore(prev_frame, first_pos);
-
-    int position = 1;
-    for (auto& var : prev_scope_vars) {
-      if (var->get_nesting_level() == current_depth) {
-        Value* current_position = Builder.CreateStructGEP(new_frame, position);
-        Value* local_var = codegen_table.lookup_var(var->get_name());
-
-        Builder.CreateStore(local_var, current_position);
-
-        position++;
-      }
-    }
+    
+    ArgsV.push_back(new_frame);
   }
-  
-  ArgsV.push_back(new_frame);
 
   int call_param_count = call_parameters.size();
 
@@ -1717,6 +2073,7 @@ Value* Return::codegen() const {
 }
 
 Value* New::codegen() const {
+  
   return nullptr;
 }
 
@@ -1725,15 +2082,17 @@ Value* Dispose::codegen() const {
 }
 
 Value* Program::codegen() const {
-  init_module_and_pass_manager();
+  init_module_and_pass_manager(this->optimize);
 
   FunctionType* FT = FunctionType::get(i32, false);
-  Function* program = Function::Create(FT, Function::ExternalLinkage, this->name, TheModule.get());
+  Function* program = Function::Create(FT, Function::ExternalLinkage, "main", TheModule.get());
 
   BasicBlock* BB = BasicBlock::Create(TheContext, "entry", program);
   Builder.SetInsertPoint(BB);
 
   codegen_table.open_scope();
+
+  codegen_library_functions();
 
   this->body->codegen();
 
@@ -1746,10 +2105,48 @@ Value* Program::codegen() const {
     std::cerr << "Invalid IR" << std::endl;
     exit(1);
   }
-  
-  //TheFPM->run(*program);
+ 
+  // Optional optimization
+  if (this->optimize)
+    TheFPM->run(*program);
 
-  TheModule->print(outs(), nullptr);
-  
+  std::string imm_name = this->file_name + ".imm";
+  std::string asm_name = this->file_name + ".asm";
+  if (this->asm_output) {
+    // Assembly output to standard output
+    std::error_code EC_IMM;
+    raw_fd_ostream fd_os_imm(imm_name, EC_IMM);
+
+    if (EC_IMM) {
+      errs() << "Error opening output file: " << EC_IMM.message();
+      exit(1);
+    }
+
+    TheModule->print(fd_os_imm, nullptr);
+
+    std::string comm1 = "llc " + imm_name + " -o \"-\"";
+    system(comm1.c_str());
+
+    std::string comm2 = "rm " + imm_name;
+    system(comm2.c_str());
+  } else if (this->imm_output) {
+    // LLVM IR to standard output
+    TheModule->print(outs(), nullptr);
+  } else {
+    // LLVM IR and assembly output to files
+    std::error_code EC_IMM;
+    raw_fd_ostream fd_os_imm(imm_name, EC_IMM);
+
+    if (EC_IMM) {
+      errs() << "Error opening output file: " << EC_IMM.message();
+      exit(1);
+    }
+
+    TheModule->print(fd_os_imm, nullptr);
+
+    std::string comm1 = "llc " + imm_name + " -o " + asm_name;
+    system(comm1.c_str());
+    }
+
   return nullptr;
 }

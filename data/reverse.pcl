@@ -22,5 +22,5 @@ end;
 
 begin
   reverse("\n!dlrow olleH");
-  (*writeString(r)*)
+  writeString(r)
 end.

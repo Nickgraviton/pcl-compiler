@@ -22,8 +22,10 @@ class FunDef {
   llvm::Function* F;
   std::vector<std::shared_ptr<VarInfo>> prev_scope_vars;
   int nesting_level;
+  bool lib_fun;
 
 public:
+  FunDef(llvm::Type* return_type, std::vector<bool>& parameters, llvm::Function* F);
   FunDef(llvm::Type* return_type, std::vector<bool>& parameters, llvm::Function* F, std::vector<std::shared_ptr<VarInfo>> prev_scope_vars, int nesting_level);
   
   void set_prev_scope_vars(std::vector<std::shared_ptr<VarInfo>>& prev_scope_vars);
@@ -33,6 +35,7 @@ public:
   llvm::Function* get_function();
   std::vector<std::shared_ptr<VarInfo>>& get_prev_scope_vars();
   int get_nesting_level();
+  bool is_lib_fun();
 };
 
 class CodegenScope {

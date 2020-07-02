@@ -115,21 +115,29 @@ SINGLE_CHARACTER {PRINTABLE}|{ESCAPE_SEQ}
 
 %%
 
+char lookup(char c) {
+  switch(c) {
+    case 'n':  return '\n';
+    case 't':  return '\t';
+    case 'r':  return '\r';
+    case '0':  return '\0';
+    case '\\': return '\\';
+    case '\'': return '\'';
+    case '\"': return '\"';
+    default:
+      lexer_error("Unknown escaped character");
+      exit(1);
+  }
+}
+
 char fix_char(char input[]) {
   std::string str = std::string(input);
   switch (str[1]) {
+    // If escaped string, convert it to the appropriate character
     case '\\':
-    {
-      switch (str[2]) {
-        case 'n':  return '\n';
-        case 't':  return '\t';
-        case 'r':  return '\r';
-        case '0':  return '\0';
-        case '\\': return '\\';
-        case '\'': return '\'';
-        case '\"': return '\"';
-      }
-    }
+      return lookup(str[2]);
+
+    // Else return the character itself
     default:
       return str[1];
   }
@@ -137,7 +145,18 @@ char fix_char(char input[]) {
 
 std::string fix_string(char input[]) {
   std::string str = std::string(input);
-  return str.substr(1, str.size() - 2);
+  // Drop quotes
+  str = str.substr(1, str.size() - 2);
+
+  std::string new_str = "";
+  for (int i = 0; i < str.size(); i++) {
+    if (str[i] == '\\')
+      new_str += lookup(str[++i]);
+    else
+      new_str += str[i];
+  }
+
+  return new_str;
 }
 
 // Local lexer error function because parser's yyerror needs a parser object instance

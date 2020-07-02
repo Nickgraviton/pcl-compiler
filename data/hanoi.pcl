@@ -7,11 +7,11 @@ procedure hanoi (var source, target, auxiliary : array of char;
 
 procedure move (var source, target : array of char);
 begin
-  (*writeString("Move from ");
+  writeString("Move from ");
   writeString(source);
   writeString(" to ");
   writeString(target);
-  writeString(".\n")*)
+  writeString(".\n")
 end;
 begin
   if rings >= 1 then
@@ -22,8 +22,8 @@ begin
   end
 end;
 begin
-  (*writeString("Please, give the number of rings : ");*)
-  numberOfRings := 0(*readInteger()*);
-  (*writeString("\nHere is the solution :\n\n");*)
+  writeString("Please, give the number of rings : ");
+  numberOfRings := readInteger();
+  writeString("\nHere is the solution :\n\n");
   hanoi("left", "right", "middle", numberOfRings)
 end.

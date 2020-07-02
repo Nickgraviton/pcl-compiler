@@ -4,10 +4,10 @@ var n, k, i, seed : integer;
 sum : real;
 
 begin
-  (*writeString("Give n: ");*)
-  n := 2(*readInteger()*);
-  (*writeString("Give k: ");*)
-  k := 4(*readInteger()*);
+  writeString("Give n: ");
+  n := readInteger();
+  writeString("Give k: ");
+  k := readInteger();
 
   i := 0;
   sum := 0.0;
@@ -20,8 +20,8 @@ begin
   end;
   if k > 0 then
   begin
-    (*writeString("Mean: ");
+    writeString("Mean: ");
     writeReal(sum / k);
-    writeString("\n")*)
+    writeString("\n")
   end
 end.
