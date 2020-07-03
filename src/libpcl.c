@@ -3,6 +3,31 @@
 #include <stdlib.h>
 #include <math.h>
 
+//------------------------------------------------------------//
+//--------------------Library functions-----------------------//
+//------------------------------------------------------------//
+
+//--------------------Available functions-----------//
+//--------------------------------------------------//
+// Output:                  | Math functions:       //
+// -writeInteger            | -abs                  //
+// -writeBoolean            | -fabs                 //
+// -writeChar               | -sqrt                 //
+// -writeReal               | -sin                  //
+// -writeString             | -cos                  //
+//                          | -tan                  //
+//                          | -arctan               //
+// Input:                   | -exp                  //
+// -readInteger             | -ln                   //
+// -readBoolean             | -pi                   //
+// -readChar                | Conversion functions: //
+// -readReal                | -trunc                //
+// -readString              | -round                //
+//--------------------------------------------------//
+
+// If a function is not implemented here then the C variant is used
+// and we link with that implementation using the -lm flag
+
 void writeInteger(int32_t n) {
   printf("%d", n);
 }

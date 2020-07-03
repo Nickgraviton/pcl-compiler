@@ -1,0 +1,8 @@
+program new_dispose;
+var a : ^array of array [5] of integer;
+begin
+  new [3] a;
+  a^[0][0] := 2;
+  writeInteger(a^[0][0]);
+  dispose [] a;
+end.

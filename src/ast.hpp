@@ -90,8 +90,7 @@ public:
 };
 
 // Name: real
-// Size: 10 bytes
-// Info: IEEE 754 representation
+// Size: 8 bytes
 class Real : public Expr {
   double val;
 

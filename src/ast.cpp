@@ -209,7 +209,7 @@ void Program::set_imm_output(bool imm_output) {
 //---------------------------------------------------------------------//
 
 // Helper function that prints indent levels for the AST
-void print_level(std::ostream& out, int level) {
+static void print_level(std::ostream& out, int level) {
   while(level-- > 0)
     out << "  |";
   out << "--";
@@ -437,6 +437,7 @@ void Program::print(std::ostream& out, int level) const {
 //---------------------------Semantic----------------------------------//
 //---------------------------------------------------------------------//
 
+// Make the library functions visible
 static void semantic_library_functions() {
   auto fun_entry = std::make_shared<FunctionEntry>(false, nullptr);
   auto parameter = std::make_pair(false, std::make_shared<VariableEntry>(std::make_shared<IntType>()));
@@ -959,7 +960,9 @@ void CallStmt::semantic() {
 void Return::semantic() {}
 
 void New::semantic() {
-  this->size->semantic();
+  if (this->size)
+    this->size->semantic();
+
   this->l_value->semantic();
 
   auto l_value_type = this->l_value->get_type();
@@ -1328,6 +1331,24 @@ static void codegen_library_functions() {
 
   codegen_table.insert_fun("chr",
       std::make_shared<FunDef>(ret_type, parameters, F));
+
+  ret_type = i8->getPointerTo();
+  args = std::vector<Type*>{Type::getInt64Ty(TheContext)};
+  parameters = std::vector<bool>{false};
+  FT = FunctionType::get(ret_type, args, false);
+  F = Function::Create(FT, Function::ExternalLinkage, "malloc", TheModule.get());
+
+  codegen_table.insert_fun("malloc",
+      std::make_shared<FunDef>(ret_type, parameters, F));
+
+  ret_type = Type::getVoidTy(TheContext);
+  args = std::vector<Type*>{i8->getPointerTo()};
+  parameters = std::vector<bool>{false};
+  FT = FunctionType::get(ret_type, args, false);
+  F = Function::Create(FT, Function::ExternalLinkage, "free", TheModule.get());
+
+  codegen_table.insert_fun("free",
+      std::make_shared<FunDef>(ret_type, parameters, F));
 }
 
 //---------------------------------------------------------------------//
@@ -1475,6 +1496,7 @@ Value* call_codegen(const std::string& fun_name, const std::vector<expr_ptr>& ca
         }
       }
     } else {
+      // If callee is in a deeper scope we send our local variables that are visible to it
       types.push_back(prev_frame->getType());
 
       for (auto& var : prev_scope_vars) {
@@ -1496,7 +1518,7 @@ Value* call_codegen(const std::string& fun_name, const std::vector<expr_ptr>& ca
 
       int position = 1;
       for (auto& var : prev_scope_vars) {
-        if (var->get_nesting_level() == current_depth) {
+        if (var->get_nesting_level() == calee_nesting_level - 1) {
           Value* current_position = Builder.CreateStructGEP(new_frame, position);
           Value* local_var = codegen_table.lookup_var(var->get_name());
 
@@ -1510,6 +1532,7 @@ Value* call_codegen(const std::string& fun_name, const std::vector<expr_ptr>& ca
     ArgsV.push_back(new_frame);
   }
 
+  // Add the caller arguments right after the frame
   int call_param_count = call_parameters.size();
 
   for (int i = 0; i < call_param_count; i++) {
@@ -1671,6 +1694,8 @@ Value* BinaryExpr::codegen() const {
 
     case BinOp::AND:
     {
+      // And is shortcircuited so evaluate the first operand and if it's false
+      // then skip evaluating the second one
       Value* res = Builder.CreateAlloca(i8, nullptr, "and_res");
 
       Value* cmp_res = Builder.CreateICmpEQ(left, c8(false), "icmp_eq");
@@ -1707,6 +1732,8 @@ Value* BinaryExpr::codegen() const {
 
     case BinOp::OR:
     {
+      // Or is shortcircuited so evaluate the first operand and if it's true
+      // then skip evaluating the second one
       Value* res = Builder.CreateAlloca(i8, nullptr, "or_res");
 
       Value* cmp_res = Builder.CreateICmpEQ(left, c8(true), "icmp_eq");
@@ -1857,7 +1884,6 @@ Value* If::codegen() const {
   if (!Builder.GetInsertBlock()->getTerminator())
     Builder.CreateBr(AfterBB);
 
-  //Builder.CreateBr(AfterBB);
   TheFunction->getBasicBlockList().push_back(AfterBB);
   Builder.SetInsertPoint(AfterBB);
 
@@ -2073,11 +2099,56 @@ Value* Return::codegen() const {
 }
 
 Value* New::codegen() const {
-  
+  Value* malloc_size;
+  std::vector<Value*> Args;
+
+  Value* l_value = this->l_value->codegen();
+ 
+  // We use a trick to calculate the element size. By creating a GEP instruction to the nil pointer
+  // of the desired type at an offset of 1 we calculate the size of a single element and we cast it
+  // to a 64 bit integer
+  PointerType* pt = dyn_cast<PointerType>(l_value->getType());
+  Value* nil = ConstantPointerNull::get(dyn_cast<PointerType>(pt->getElementType()));
+  Value* element_size = Builder.CreateGEP(nil, c32(1));
+  malloc_size = Builder.CreatePtrToInt(element_size, Type::getInt64Ty(TheContext));
+
+  // If a size was provided we multiply the element size by the number of elements
+  if (this->size) {
+    Value* size = this->size->codegen();
+
+    size = Builder.CreateSExt(size, Type::getInt64Ty(TheContext));
+
+    malloc_size = Builder.CreateMul(size, malloc_size);
+  }
+
+  Args.push_back(malloc_size);
+  Function* malloc = codegen_table.lookup_fun("malloc")->get_function();
+  Value* ptr_to_memory = Builder.CreateCall(malloc, Args);
+
+  // Bitcast the result from a pointer to i8 to our type
+  ptr_to_memory = Builder.CreateBitCast(ptr_to_memory, pt->getElementType());
+
+  Builder.CreateStore(ptr_to_memory, l_value);
+
   return nullptr;
 }
 
 Value* Dispose::codegen() const {
+  std::vector<Value*> Args;
+
+  Value* l_value = this->l_value->codegen();
+  Value* ptr = Builder.CreateLoad(l_value);
+
+  // Bitcast from our type to pointer to i8
+  Value* ptr_i8 = Builder.CreateBitCast(ptr, i8->getPointerTo());
+
+  Args.push_back(ptr_i8);
+  Function* free = codegen_table.lookup_fun("free")->get_function();
+  Builder.CreateCall(free, Args);
+
+  // Store the nil pointer after the memory is freed
+  Builder.CreateStore(ConstantPointerNull::get(dyn_cast<PointerType>(ptr->getType())), l_value);
+
   return nullptr;
 }
 

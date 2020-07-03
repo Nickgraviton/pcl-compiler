@@ -10,6 +10,10 @@
 
 class TypeInfo;
 
+// Varialbe information
+// name: the name of the variable
+// nesting_level: the nesting level where the variable is located
+// type: the type of the variable
 class VarInfo {
   std::string name;
   int nesting_level;
@@ -23,6 +27,7 @@ public:
   std::shared_ptr<TypeInfo> get_type();
 };
 
+
 class Entry {
   std::shared_ptr<TypeInfo> type;
 
@@ -33,11 +38,17 @@ public:
   std::shared_ptr<TypeInfo> get_type();
 };
 
+// Variable entry
+// type: type of the variable
 class VariableEntry : public Entry {
 public:
   VariableEntry(std::shared_ptr<TypeInfo> type);
 };
 
+// Function entry
+// forward_declartion: denotes whether the declaration is forward
+// parameters: a pair of a bool and a variable entry that denotes whether each parameter is passed
+//             by reference and that holds the type of the variable
 class FunctionEntry : public Entry {
   bool forward_declaration;
   std::vector<std::pair<bool, std::shared_ptr<VariableEntry>>> parameters;
@@ -51,6 +62,7 @@ public:
   bool is_forward();
 };
 
+// Scope of the symbol table
 class SymbolScope {
   std::set<std::string> labels;
   std::vector<std::string> vars;
@@ -66,6 +78,9 @@ public:
   std::shared_ptr<Entry> lookup(std::string name);
 };
 
+// Synbol table
+// scopes: scopes are implemented by a vector. Each time we enter a deeper scope we push back a scope
+//         and each time we exit one we pop it
 class SymbolTable {
   std::vector<SymbolScope> scopes;
 

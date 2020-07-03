@@ -30,7 +30,7 @@ libpcl.a: libpcl.c
 .PHONY: clean distclean
 
 clean:
-	$(RM) lexer.cpp parser.cpp parser.hpp parser.output *.a *.o
+	$(RM) lexer.cpp parser.cpp parser.hpp parser.output *.o
 
 distclean: clean
-	$(RM) pcl
+	$(RM) pcl libpcl.a

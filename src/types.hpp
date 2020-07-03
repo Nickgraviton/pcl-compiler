@@ -41,8 +41,11 @@ enum class BasicType {
   Pointer
 };
 
-// Both `array [n] of t` and `array of t` types need a complete type t
-// The only incomplete type is `array of t` without a specified size
+// Type info
+// t: the basic type 
+// complete: bool that denotes whether the variable is complete or not
+//           Both `array [n] of t` and `array of t` types need a complete type t
+//           The only incomplete type is `array of t` without a specified size
 class TypeInfo {
   BasicType t;
   bool complete;
