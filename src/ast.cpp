@@ -397,7 +397,8 @@ void Fun::print(std::ostream& out, int level) const {
   out << "formal_parameters, body, forward_declaration: " << this->forward_declaration << "):" << std::endl;
   for (auto& f : this->formal_parameters)
     f->print(out, level + 1);
-  this->body->print(out, level + 1);
+  if (!this->forward_declaration)
+    this->body->print(out, level + 1);
 }
 
 void CallStmt::print(std::ostream& out, int level) const {
@@ -436,6 +437,15 @@ void Program::print(std::ostream& out, int level) const {
 //---------------------------------------------------------------------//
 //---------------------------Semantic----------------------------------//
 //---------------------------------------------------------------------//
+
+// Special struct that doesn't live in a table but is used only to pass 
+// info from the semantic pass to the codegen pass
+struct nesting_info {
+  int nesting_level;
+  std::vector<std::shared_ptr<VarInfo>> prev_scope_vars;
+};
+
+std::map<std::string, nesting_info> semantic_to_codegen;
 
 // Make the library functions visible
 static void semantic_library_functions() {
@@ -850,11 +860,11 @@ void Assign::semantic() {
   auto right_type = this->right->get_type();
   auto left_type = this->left->get_type();
 
-  bool array = (right_type->is(BasicType::Array) || right_type->is(BasicType::IArray))
+  /*bool array = (right_type->is(BasicType::Array) || right_type->is(BasicType::IArray))
     || (left_type->is(BasicType::Array) || left_type->is(BasicType::IArray));
 
   if (array)
-    error("Arrays cannot be assigned to directly", this->get_line());
+    error("Arrays cannot be assigned to directly", this->get_line());*/
 
   if (!compatible_types(left_type, right_type))
     error("Value cannot be assigned due to type mismatch", this->get_line());
@@ -926,9 +936,8 @@ void Fun::semantic() {
     }
   }
 
-  bool success = symbol_table.insert(this->fun_name, fun_entry);
-  if (!success)
-    error(this->fun_name + " has already been declared and is not a function", this->get_line());
+  if (!entry)
+    symbol_table.insert(this->fun_name, fun_entry);
 
   // Open function's scope and insert the local variables and the result variable if not a procedure
   if (!this->forward_declaration) {
@@ -937,6 +946,12 @@ void Fun::semantic() {
     symbol_table.open_scope();
 
     this->nesting_level = symbol_table.get_nesting_level();
+
+    // Store this info outside of a table so that it presists after the semantic pass
+    struct nesting_info ni;
+    ni.nesting_level = this->nesting_level;
+    ni.prev_scope_vars = this->prev_scope_vars;
+    semantic_to_codegen[this->fun_name] = ni;
 
     for (auto& formal : this->formal_parameters)
       for (auto& name : formal->get_names())
@@ -1300,7 +1315,7 @@ static void codegen_library_functions() {
   args = std::vector<Type*>{f64};
   parameters = std::vector<bool>{false};
   FT = FunctionType::get(ret_type, args, false);
-  F = Function::Create(FT, Function::ExternalLinkage, "trunc", TheModule.get());
+  F = Function::Create(FT, Function::ExternalLinkage, "trunc_", TheModule.get());
 
   codegen_table.insert_fun("trunc",
       std::make_shared<FunDef>(ret_type, parameters, F));
@@ -1309,7 +1324,7 @@ static void codegen_library_functions() {
   args = std::vector<Type*>{f64};
   parameters = std::vector<bool>{false};
   FT = FunctionType::get(ret_type, args, false);
-  F = Function::Create(FT, Function::ExternalLinkage, "round", TheModule.get());
+  F = Function::Create(FT, Function::ExternalLinkage, "round_", TheModule.get());
 
   codegen_table.insert_fun("round",
       std::make_shared<FunDef>(ret_type, parameters, F));
@@ -1336,7 +1351,7 @@ static void codegen_library_functions() {
   args = std::vector<Type*>{Type::getInt64Ty(TheContext)};
   parameters = std::vector<bool>{false};
   FT = FunctionType::get(ret_type, args, false);
-  F = Function::Create(FT, Function::ExternalLinkage, "malloc", TheModule.get());
+  F = Function::Create(FT, Function::ExternalLinkage, "malloc_", TheModule.get());
 
   codegen_table.insert_fun("malloc",
       std::make_shared<FunDef>(ret_type, parameters, F));
@@ -1355,37 +1370,42 @@ static void codegen_library_functions() {
 //--------------------------Codegen------------------------------------//
 //---------------------------------------------------------------------//
 
-Value* Boolean::codegen() const {
+Value* Boolean::codegen() {
   return c8(this->val);
 }
 
-Value* Char::codegen() const {
+Value* Char::codegen() {
   return c8(this->val);
 }
 
-Value* Integer::codegen() const {
+Value* Integer::codegen() {
   return c32(this->val);
 }
 
-Value* Real::codegen() const {
+Value* Real::codegen() {
   return c64(this->val);
 }
 
-Value* String::codegen() const {
+Value* String::codegen() {
   return Builder.CreateGlobalStringPtr(this->val);
 }
 
-Value* Nil::codegen() const {
+Value* Nil::codegen() {
   auto ptr = std::static_pointer_cast<PtrType>(this->type);
   auto subtype = ptr->get_subtype();
-  return ConstantPointerNull::get(to_llvm_type(subtype)->getPointerTo());
+  Value* ptr_null = ConstantPointerNull::get(to_llvm_type(subtype)->getPointerTo());
+
+  Value* ptr_to_ptr = Builder.CreateAlloca(ptr_null->getType(), nullptr, "nil");
+  Builder.CreateStore(ptr_null, ptr_to_ptr);
+
+  return ptr_to_ptr;
 }
 
-Value* Variable::codegen() const {
+Value* Variable::codegen() {
   return codegen_table.lookup_var(this->name);
 }
 
-Value* Array::codegen() const {
+Value* Array::codegen() {
   Value* arr = this->arr->codegen();
   Value* index = this->index->codegen();
 
@@ -1403,21 +1423,21 @@ Value* Array::codegen() const {
   }
 }
 
-Value* Deref::codegen() const {
+Value* Deref::codegen() {
   return Builder.CreateLoad(this->ptr->codegen());
 }
 
 // Allocate and return pointer to the variable so that
 // when it's loaded we get the address of the variable
-Value* AddressOf::codegen() const {
+Value* AddressOf::codegen() {
   Value* var = this->var->codegen();
-  AllocaInst* ptr = Builder.CreateAlloca(var->getType()->getPointerTo(), nullptr, "pointer");
+  AllocaInst* ptr = Builder.CreateAlloca(var->getType(), nullptr, "pointer");
   Builder.CreateStore(var, ptr, false);
   return ptr;
 }
 
 // Helper function for the two call nodes
-Value* call_codegen(const std::string& fun_name, const std::vector<expr_ptr>& call_parameters, const int& line) {
+Value* call_codegen(std::string& fun_name, std::vector<expr_ptr>& call_parameters, int line) {
   auto fun_def = codegen_table.lookup_fun(fun_name);
   auto prev_scope_vars = fun_def->get_prev_scope_vars();
   auto fun_parameters = fun_def->get_parameters();
@@ -1518,7 +1538,7 @@ Value* call_codegen(const std::string& fun_name, const std::vector<expr_ptr>& ca
 
       int position = 1;
       for (auto& var : prev_scope_vars) {
-        if (var->get_nesting_level() == calee_nesting_level - 1) {
+        if (var->get_nesting_level() == callee_nesting_level - 1) {
           Value* current_position = Builder.CreateStructGEP(new_frame, position);
           Value* local_var = codegen_table.lookup_var(var->get_name());
 
@@ -1541,7 +1561,7 @@ Value* call_codegen(const std::string& fun_name, const std::vector<expr_ptr>& ca
     Value* v = call_parameters[i]->codegen();
     if (pass_by_reference) {
       if (!v->getType()->isPointerTy()) {
-        std::cerr << "Line: " << line << "Error: Pass by reference requires an l-value" << std::endl;
+        std::cerr << "Line: " << line << " Error: Pass by reference requires an l-value" << std::endl;
         exit(1);
       }
 
@@ -1559,15 +1579,15 @@ Value* call_codegen(const std::string& fun_name, const std::vector<expr_ptr>& ca
   return Builder.CreateCall(F, ArgsV);
 }
 
-Value* CallExpr::codegen() const {
+Value* CallExpr::codegen() {
   return call_codegen(this->fun_name, this->parameters, this->get_line());
 }
 
-Value* Result::codegen() const {
+Value* Result::codegen() {
   return codegen_table.lookup_var("result");
 }
 
-Value* BinaryExpr::codegen() const {
+Value* BinaryExpr::codegen() {
   Value* left = this->left->codegen();
 
   // AND,OR operations are shortcircuited and the right operand is
@@ -1629,10 +1649,15 @@ Value* BinaryExpr::codegen() const {
     case BinOp::EQ:
     {
       Value* cmp_res;
-      if(left_type->is(BasicType::Real))
+      if (left_type->is(BasicType::Real)) {
         cmp_res = Builder.CreateFCmpUEQ(left, right, "fcmp_eq");
-      else
+      } else if (left_type->is(BasicType::Integer)) {
         cmp_res = Builder.CreateICmpEQ(left, right, "icmp_eq");
+      } else {
+        left = Builder.CreatePtrToInt(left, Type::getInt64Ty(TheContext));
+        right = Builder.CreatePtrToInt(right, Type::getInt64Ty(TheContext));
+        cmp_res = Builder.CreateICmpEQ(left, right, "icmp_eq");
+      }
 
       return Builder.CreateZExt(cmp_res, i8);
     }
@@ -1640,10 +1665,15 @@ Value* BinaryExpr::codegen() const {
     case BinOp::NE:
     {
       Value* cmp_res;
-      if(left_type->is(BasicType::Real))
+      if (left_type->is(BasicType::Real)) {
         cmp_res = Builder.CreateFCmpUNE(left, right, "fcmp_ne");
-      else
+      } else if (left_type->is(BasicType::Integer)) {
         cmp_res = Builder.CreateICmpNE(left, right, "icmp_ne");
+      } else {
+        left = Builder.CreatePtrToInt(left, Type::getInt64Ty(TheContext));
+        right = Builder.CreatePtrToInt(right, Type::getInt64Ty(TheContext));
+        cmp_res = Builder.CreateICmpNE(left, right, "icmp_eq");
+      }
 
       return Builder.CreateZExt(cmp_res, i8);
     }
@@ -1651,7 +1681,7 @@ Value* BinaryExpr::codegen() const {
     case BinOp::LT:
     {
       Value* cmp_res;
-      if(left_type->is(BasicType::Real))
+      if (left_type->is(BasicType::Real))
         cmp_res = Builder.CreateFCmpULT(left, right, "fcmp_lt");
       else
         cmp_res = Builder.CreateICmpSLT(left, right, "icmp_lt");
@@ -1773,7 +1803,7 @@ Value* BinaryExpr::codegen() const {
   }
 }
 
-Value* UnaryExpr::codegen() const {
+Value* UnaryExpr::codegen() {
   Value* operand = this->operand->codegen();
   operand = (operand->getType()->isPointerTy()) ? Builder.CreateLoad(operand) : operand;
 
@@ -1795,18 +1825,18 @@ Value* UnaryExpr::codegen() const {
   }
 }
 
-Value* Empty::codegen() const {
+Value* Empty::codegen() {
   return nullptr;
 }
 
-Value* Block::codegen() const {
+Value* Block::codegen() {
   for (auto& stmt : stmt_list)
     stmt->codegen();
 
   return nullptr;
 }
 
-Value* VarNames::codegen() const {
+Value* VarNames::codegen() {
   Type* type = to_llvm_type(this->type);
   for (auto& name : this->names) {
     AllocaInst* alloca = Builder.CreateAlloca(type, nullptr, name);
@@ -1817,18 +1847,18 @@ Value* VarNames::codegen() const {
   return nullptr;
 }
 
-Value* VarDecl::codegen() const {
+Value* VarDecl::codegen() {
   for (auto& element : this->var_names)
     element->codegen();
 
   return nullptr;
 }
 
-Value* LabelDecl::codegen() const {
+Value* LabelDecl::codegen() {
   return nullptr;
 }
 
-Value* Assign::codegen() const {
+Value* Assign::codegen() {
   Value* left = this->left->codegen();
   Value* right = this->right->codegen();
 
@@ -1837,15 +1867,17 @@ Value* Assign::codegen() const {
   return nullptr;
 }
 
-Value* Goto::codegen() const {
+Value* Goto::codegen() {
   Builder.CreateBr(codegen_table.lookup_label(this->label));
   return nullptr;
 }
 
-Value* Label::codegen() const {
+Value* Label::codegen() {
   Function* TheFunction = Builder.GetInsertBlock()->getParent();
 
   BasicBlock* LabelBB = BasicBlock::Create(TheContext, "label_" + this->label, TheFunction);
+  Builder.CreateBr(LabelBB);
+
   Builder.SetInsertPoint(LabelBB);
 
   codegen_table.insert_label(this->label, LabelBB);
@@ -1855,7 +1887,7 @@ Value* Label::codegen() const {
   return nullptr;
 }
 
-Value* If::codegen() const {
+Value* If::codegen() {
   Value* cond = this->cond->codegen();
   cond = (cond->getType()->isPointerTy()) ? Builder.CreateLoad(cond) : cond;
   Value* cmp_res = Builder.CreateICmpEQ(cond, c8(true), "if_cmp");
@@ -1890,7 +1922,7 @@ Value* If::codegen() const {
   return nullptr;
 }
 
-Value* While::codegen() const {
+Value* While::codegen() {
   Function* TheFunction = Builder.GetInsertBlock()->getParent();
 
   BasicBlock* LoopBB = BasicBlock::Create(TheContext, "loop", TheFunction);
@@ -1917,11 +1949,11 @@ Value* While::codegen() const {
   return nullptr;
 }
 
-Value* Formal::codegen() const {
+Value* Formal::codegen() {
   return nullptr;
 }
 
-Value* Body::codegen() const {
+Value* Body::codegen() {
   for (auto& l : this->local_decls)
     l->codegen();
 
@@ -1930,8 +1962,12 @@ Value* Body::codegen() const {
   return nullptr;
 }
 
-Value* Fun::codegen() const {
+Value* Fun::codegen() {
   BasicBlock* Parent = Builder.GetInsertBlock();
+
+  auto ni = semantic_to_codegen[this->fun_name];
+  this->nesting_level = ni.nesting_level;
+  this->prev_scope_vars = ni.prev_scope_vars;
 
   // Create function only once
   if (!codegen_table.lookup_fun(this->fun_name)) {
@@ -2078,13 +2114,13 @@ Value* Fun::codegen() const {
   return nullptr;
 }
 
-Value* CallStmt::codegen() const {
+Value* CallStmt::codegen() {
   call_codegen(this->fun_name, this->parameters, this->get_line());
 
   return nullptr;
 }
 
-Value* Return::codegen() const {
+Value* Return::codegen() {
   // If within procedure then result variable is equal to nullptr
   // else we return its value
   Value* result_addr = codegen_table.lookup_var("result");
@@ -2098,7 +2134,7 @@ Value* Return::codegen() const {
   return nullptr;
 }
 
-Value* New::codegen() const {
+Value* New::codegen() {
   Value* malloc_size;
   std::vector<Value*> Args;
 
@@ -2115,6 +2151,7 @@ Value* New::codegen() const {
   // If a size was provided we multiply the element size by the number of elements
   if (this->size) {
     Value* size = this->size->codegen();
+    size = (size->getType()->isPointerTy()) ? Builder.CreateLoad(size) : size;
 
     size = Builder.CreateSExt(size, Type::getInt64Ty(TheContext));
 
@@ -2133,7 +2170,7 @@ Value* New::codegen() const {
   return nullptr;
 }
 
-Value* Dispose::codegen() const {
+Value* Dispose::codegen() {
   std::vector<Value*> Args;
 
   Value* l_value = this->l_value->codegen();
@@ -2152,7 +2189,7 @@ Value* Dispose::codegen() const {
   return nullptr;
 }
 
-Value* Program::codegen() const {
+Value* Program::codegen() {
   init_module_and_pass_manager(this->optimize);
 
   FunctionType* FT = FunctionType::get(i32, false);

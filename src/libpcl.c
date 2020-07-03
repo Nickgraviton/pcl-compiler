@@ -76,8 +76,10 @@ double readReal() {
 }
 
 void readString(int32_t size, char* s) {
-  if(!fgets(s, size, stdin))
+  if(!fgets(s, size, stdin)) {
+    printf("Error reading input\n");
     exit(1);
+  }
 }
 
 double arctan(double r) {
@@ -92,10 +94,28 @@ double pi() {
   return M_PI;
 }
 
+int32_t trunc_(double r) {
+  return (int32_t) trunc(r);
+}
+
+int32_t round_(double r) {
+  return (int32_t) round(r);
+}
+
 int32_t ord(int8_t c) {
   return (int32_t) c;
 }
 
 int8_t chr(int32_t n) {
   return (int8_t) n;
+}
+
+int8_t* malloc_(int64_t size) {
+  int8_t* ret = malloc(size);
+  if (ret == NULL) {
+    printf("Error during memory allocation\n");
+    exit(1);
+  }
+
+  return ret;
 }

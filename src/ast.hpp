@@ -25,7 +25,7 @@ public:
   int get_line() const;
   virtual void print(std::ostream& out, int level) const = 0;
   virtual void semantic() = 0;
-  virtual llvm::Value* codegen() const = 0;
+  virtual llvm::Value* codegen() = 0;
 };
 
 class Expr : public Node {
@@ -58,7 +58,7 @@ public:
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
-  llvm::Value* codegen() const override;
+  llvm::Value* codegen() override;
 };
 
 // Name: char
@@ -72,7 +72,7 @@ public:
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
-  llvm::Value* codegen() const override;
+  llvm::Value* codegen() override;
 };
 
 // Name: integer
@@ -86,7 +86,7 @@ public:
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
-  llvm::Value* codegen() const override;
+  llvm::Value* codegen() override;
 };
 
 // Name: real
@@ -99,7 +99,7 @@ public:
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
-  llvm::Value* codegen() const override;
+  llvm::Value* codegen() override;
 };
 
 // Type: array[n] of char
@@ -112,7 +112,7 @@ public:
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
-  llvm::Value* codegen() const override;
+  llvm::Value* codegen() override;
 };
 
 // Name: nil
@@ -124,7 +124,7 @@ public:
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
-  llvm::Value* codegen() const override;
+  llvm::Value* codegen() override;
 };
 
 //------------------------------------------------------------//
@@ -140,7 +140,7 @@ public:
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
-  llvm::Value* codegen() const override;
+  llvm::Value* codegen() override;
 };
 
 // Array expression
@@ -152,7 +152,7 @@ public:
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
-  llvm::Value* codegen() const override;
+  llvm::Value* codegen() override;
 };
 
 // Dereference expression
@@ -164,7 +164,7 @@ public:
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
-  llvm::Value* codegen() const override;
+  llvm::Value* codegen() override;
 };
 
 // Address of variable expression
@@ -176,7 +176,7 @@ public:
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
-  llvm::Value* codegen() const override;
+  llvm::Value* codegen() override;
 };
 
 // Expr version of a call
@@ -189,7 +189,7 @@ public:
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
-  llvm::Value* codegen() const override;
+  llvm::Value* codegen() override;
 };
 
 // Result variable for functions
@@ -199,7 +199,7 @@ public:
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
-  llvm::Value* codegen() const override;
+  llvm::Value* codegen() override;
 };
 
 // Binary expression using arithmetic, comparison or logical operators
@@ -212,7 +212,7 @@ public:
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
-  llvm::Value* codegen() const override;
+  llvm::Value* codegen() override;
 };
 
 // Unary operator one of: not, +, -
@@ -225,7 +225,7 @@ public:
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
-  llvm::Value* codegen() const override;
+  llvm::Value* codegen() override;
 };
 
 //------------------------------------------------------------//
@@ -245,7 +245,7 @@ public:
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
-  llvm::Value* codegen() const override;
+  llvm::Value* codegen() override;
 };
 
 // Code block comprised of multiple instructions
@@ -257,7 +257,7 @@ public:
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
-  llvm::Value* codegen() const override;
+  llvm::Value* codegen() override;
 };
 
 // Variable names of the same type
@@ -270,7 +270,7 @@ public:
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
-  llvm::Value* codegen() const override;
+  llvm::Value* codegen() override;
 };
 
 // Variable declarations
@@ -282,7 +282,7 @@ public:
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
-  llvm::Value* codegen() const override;
+  llvm::Value* codegen() override;
 };
 
 // Label declaration
@@ -294,7 +294,7 @@ public:
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
-  llvm::Value* codegen() const override;
+  llvm::Value* codegen() override;
 };
 
 // Assignment statement
@@ -306,7 +306,7 @@ public:
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
-  llvm::Value* codegen() const override;
+  llvm::Value* codegen() override;
 };
 
 // Goto statement that jumps to label in the same block
@@ -318,7 +318,7 @@ public:
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
-  llvm::Value* codegen() const override;
+  llvm::Value* codegen() override;
 };
 
 // Label before a statement where we can goto
@@ -331,7 +331,7 @@ public:
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
-  llvm::Value* codegen() const override;
+  llvm::Value* codegen() override;
 };
 
 // If statement with an optional else clause
@@ -344,7 +344,7 @@ public:
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
-  llvm::Value* codegen() const override;
+  llvm::Value* codegen() override;
 };
 
 // While loop
@@ -357,7 +357,7 @@ public:
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
-  llvm::Value* codegen() const override;
+  llvm::Value* codegen() override;
 };
 
 // Formal parameters for functions
@@ -377,7 +377,7 @@ public:
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
-  llvm::Value* codegen() const override;
+  llvm::Value* codegen() override;
 };
 
 // Body of function or program containing declarations and a block of statements
@@ -390,7 +390,7 @@ public:
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
-  llvm::Value* codegen() const override;
+  llvm::Value* codegen() override;
 };
 
 // Two types of functions: procedures and functions
@@ -418,7 +418,7 @@ public:
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
-  llvm::Value* codegen() const override;
+  llvm::Value* codegen() override;
 };
 
 // Stmt version of a call
@@ -433,7 +433,7 @@ public:
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
-  llvm::Value* codegen() const override;
+  llvm::Value* codegen() override;
 };
 
 // Return statement
@@ -443,7 +443,7 @@ public:
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
-  llvm::Value* codegen() const override;
+  llvm::Value* codegen() override;
 };
 
 // Dynamic memory allocation
@@ -455,7 +455,7 @@ public:
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
-  llvm::Value* codegen() const override;
+  llvm::Value* codegen() override;
 };
 
 // Deallocation of dynamically allocated memory
@@ -468,7 +468,7 @@ public:
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
-  llvm::Value* codegen() const override;
+  llvm::Value* codegen() override;
 };
 
 // AST Root and initial program declaration
@@ -488,7 +488,7 @@ public:
 
   void print(std::ostream& out, int level) const override;
   void semantic() override;
-  llvm::Value* codegen() const override;
+  llvm::Value* codegen() override;
 };
 
 #endif
