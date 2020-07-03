@@ -75,6 +75,26 @@ The compiler has been tested on Ubuntu 20.04 with llvm 10.0.0, clang 10.0.0, fle
 To install the necessary dependencies run:  
 `sudo apt install make llvm clang flex bison`
 
+## How to build, run and make an executable directly
+
+In order to compile a file directly use the `compile.sh` script that takes the file to be compiled as input
+and outputs an executable named `a.out`
+
+To use the script either invoke the shell directly:
+
+`sh compile.sh <input_file>`
+
+or add execution permissions to the script and then execute it:
+
+```
+chmod +x compile.sh
+./compile.sh <input_file>
+```
+
+After the executable is created in the current folder simply execute it with its arguments:
+
+`./a.out <args>`
+
 ## How to build
 Inside the src folder run:
 
@@ -99,22 +119,3 @@ Having the `.asm` file of the input, we can then link our output file with the `
 
 `clang <input_file>.asm /path/to/libpcl.a [-o <output_file>] -lm`
 
-## How to build, run and make an executable directly
-
-An alternative to the previous segments is to use the `compile.sh` script that takes the file to be compiled as input
-and outputs and executable named `a.out`
-
-To use the script either invoke the shell directly:
-
-`sh compile.sh <input_file>`
-
-or add execution permissions to the script and then execute it:
-
-```
-chmod +x compile.sh
-./compile.sh <input_file>
-```
-
-After the executable is created in the current folder simply execute it with its arguments:
-
-`./a.out <args>`
