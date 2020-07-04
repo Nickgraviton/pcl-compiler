@@ -1,12 +1,15 @@
 #!/bin/sh
 
-if [ "$1" != "" ]
-then
+if [ "$1" != "" ]; then
   echo "Compiling $1"
   make -sC src
-  ./src/pcl -f < $1 > a.asm || exit 1
-  clang -g a.asm ./src/libpcl.a -lm
-  rm a.asm
+  if ./src/pcl -f < $1 > a.asm; then
+    clang a.asm ./src/libpcl.a -lm
+    rm a.asm
+  else
+    rm a.asm
+    exit 1
+  fi
 else
   echo "Usage: ./compile.sh <input_file>"
 fi
