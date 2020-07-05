@@ -1,5 +1,5 @@
 # PCL
-Compiler implemented in C++ using flex, bison, llvm and clang. A toy compiler  for the PCL toy language wich has many similarities with Pascal.
+Compiler implemented in C++ using flex, bison, llvm and clang. A toy compiler  for the PCL toy language which has many similarities with Pascal.
 
 ## Project structure
 ```
@@ -106,10 +106,10 @@ Inside the src folder run:
 
 When the `-O` flag is supplied, llvm optimization passes are activated.
 
-- `pcl [-O] <input_file>.pcl` to produce two files. One with the `.imm` extension contating the llvm IR of the input program
+- `pcl [-O] <input_file>.pcl` to produce two files. One with the `.imm` extension containing the llvm IR of the input program
 and one with the `.asm` extension containing the assembly output of the input program.
 
-- `pcl [-O] [-i|-f]` when the input program is given in standard input and the output is given in the standard output.
+- `pcl [-O] [-i|-f]` when the input program is given in standard input and the output is given in standard output.
 When the `-i` flag is specified the output contains the llvm IR of the input program and when the `-f` flag is specified
 the output contains the assmebly output of the input program.
 
