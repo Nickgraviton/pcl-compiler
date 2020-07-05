@@ -53,7 +53,7 @@ and generate the output
 semantic pass
 - `types.cpp/types.hpp:` Type declarations that are used during the semantic pass to perform checks
 
-## Dependecies
+## Dependencies
 
 NOTE: Bison needs to be at least version 3.2. 
 
@@ -91,9 +91,9 @@ chmod +x compile.sh
 ./compile.sh <input_file>
 ```
 
-After the executable is created in the current folder simply execute it with its arguments:
+After the executable is created in the current folder simply execute it:
 
-`./a.out <args>`
+`./a.out`
 
 ## How to build
 Inside the src folder run:
