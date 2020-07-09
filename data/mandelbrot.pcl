@@ -1,0 +1,75 @@
+(* Redirect the output of this file to a file with the ".pgm"
+   extension to view the output as an image *)
+
+program mandelbrot_set;
+    var height : integer;
+    var width  : integer;
+    var iter   : integer;
+    var scale  : integer;
+ 
+    function mandelbrot (x,y : real) : integer;
+        var z   : array[2] of real;
+        var tmp : array[2] of real;
+        var i   : integer;
+
+        begin
+            z[0] := 0.0;
+            z[1] := 0.0;
+            i    := 0;
+            
+            (* if |z| <= 2 for all iterations, z is in the set *) 
+            while (i < iter) and (z[0]*z[0] + z[1]*z[1] <= 4) do
+            begin
+                tmp[0] := z[0]*z[0]-z[1]*z[1];
+                tmp[1] := 2*z[0]*z[1];
+                z[0] := tmp[0] + x;
+                z[1] := tmp[1] + y;
+                i := i + 1;
+            end;
+            result := i;
+        end;
+
+    var h : integer;
+    var w : integer;
+    var r : integer;
+    
+    begin
+    height := 500;
+    width  := height;
+    scale  := height div 3;
+
+    (* doubles as maximum brightness, positive integer bellow 256 *)
+    iter   := 100;
+     
+    h := 0;
+    w := 0;
+        
+    (* prints the header of the .pgm format*)
+    writeString("P2\n");
+    writeInteger(width);
+    writeString("\n");
+    writeInteger(height);
+    writeString("\n");
+    writeInteger(iter);
+    writeString("\n");
+
+    (* for each pixel, map it to a complex number and evaluate it *)
+    while h < height do
+    begin
+        w := 0;
+        while w < width do
+        begin
+            (* scaled to taste, arbitrary constants *)
+            r := mandelbrot((w-0.7*width)/scale,(h-0.5*height)/scale);
+            if r < iter then
+            begin
+                writeInteger(r);
+                writeString("\n");
+            end
+            else
+                writeString("0\n");
+            w := w + 1;
+            end;
+        h := h + 1;
+        end;
+    end.

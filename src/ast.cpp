@@ -1651,11 +1651,11 @@ Value* BinaryExpr::codegen() {
       Value* cmp_res;
       if (left_type->is(BasicType::Real)) {
         cmp_res = Builder.CreateFCmpUEQ(left, right, "fcmp_eq");
-      } else if (left_type->is(BasicType::Integer)) {
-        cmp_res = Builder.CreateICmpEQ(left, right, "icmp_eq");
-      } else {
+      } else if (left->getType()->isPointerTy() && right->getType()->isPointerTy()) {
         left = Builder.CreatePtrToInt(left, Type::getInt64Ty(TheContext));
         right = Builder.CreatePtrToInt(right, Type::getInt64Ty(TheContext));
+        cmp_res = Builder.CreateICmpEQ(left, right, "icmp_eq");
+      } else {
         cmp_res = Builder.CreateICmpEQ(left, right, "icmp_eq");
       }
 
@@ -1667,14 +1667,14 @@ Value* BinaryExpr::codegen() {
       Value* cmp_res;
       if (left_type->is(BasicType::Real)) {
         cmp_res = Builder.CreateFCmpUNE(left, right, "fcmp_ne");
-      } else if (left_type->is(BasicType::Integer)) {
-        cmp_res = Builder.CreateICmpNE(left, right, "icmp_ne");
-      } else {
+      } else if (left->getType()->isPointerTy() && right->getType()->isPointerTy()) {
         left = Builder.CreatePtrToInt(left, Type::getInt64Ty(TheContext));
         right = Builder.CreatePtrToInt(right, Type::getInt64Ty(TheContext));
-        cmp_res = Builder.CreateICmpNE(left, right, "icmp_eq");
+        cmp_res = Builder.CreateICmpNE(left, right, "icmp_ne");
+      } else {
+        cmp_res = Builder.CreateICmpNE(left, right, "icmp_ne");
       }
-
+  
       return Builder.CreateZExt(cmp_res, i8);
     }
 
@@ -1855,6 +1855,14 @@ Value* VarDecl::codegen() {
 }
 
 Value* LabelDecl::codegen() {
+  Function* TheFunction = Builder.GetInsertBlock()->getParent();
+
+  for (auto& name : this->names) {
+    BasicBlock* LabelBB = BasicBlock::Create(TheContext, "label_" + name, TheFunction);
+
+    codegen_table.insert_label(name, LabelBB);
+  }
+
   return nullptr;
 }
 
@@ -1873,14 +1881,10 @@ Value* Goto::codegen() {
 }
 
 Value* Label::codegen() {
-  Function* TheFunction = Builder.GetInsertBlock()->getParent();
-
-  BasicBlock* LabelBB = BasicBlock::Create(TheContext, "label_" + this->label, TheFunction);
+  BasicBlock* LabelBB = codegen_table.lookup_label(this->label);
   Builder.CreateBr(LabelBB);
 
   Builder.SetInsertPoint(LabelBB);
-
-  codegen_table.insert_label(this->label, LabelBB);
 
   this->stmt->codegen();
 
