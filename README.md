@@ -119,3 +119,13 @@ Having the `.asm` file of the input, we can then link our output file with the `
 
 `clang <input_file>.asm /path/to/libpcl.a [-o <output_file>] -lm`
 
+## How to run with Docker(Ubuntu 20.04 base image)
+(Not recommended as the resulting image file can be quite big and the output file is inside the container unless a directory is mounted inside of it)
+
+Upon building the docker image, the `data` and `src` folders along with the `compile.sh` file get copied into the image.
+Therefore input files for the compiler should be inside the `data` folder before building the image.
+
+1. Run `docker build -t compiler .`
+2. Run `docker run -it compiler`
+3. You will be dropped into an interactive shell where you can run `sh compile.sh <input_file>`
+4. Run the produced executable by executing it `./a.out`
