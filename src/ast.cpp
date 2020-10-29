@@ -1580,7 +1580,13 @@ Value* call_codegen(std::string& fun_name, std::vector<expr_ptr>& call_parameter
 }
 
 Value* CallExpr::codegen() {
-  return call_codegen(this->fun_name, this->parameters, this->get_line());
+  auto fun_def = codegen_table.lookup_fun(this->fun_name);
+
+  Value* temp_res = Builder.CreateAlloca(fun_def->get_return_type(), nullptr);
+  Value* call_res = call_codegen(this->fun_name, this->parameters, this->get_line());
+  Builder.CreateStore(call_res, temp_res);
+
+  return temp_res;
 }
 
 Value* Result::codegen() {
@@ -1817,8 +1823,11 @@ Value* UnaryExpr::codegen() {
       else
         return Builder.CreateFNeg(operand, "fneg");
 
-    case UnOp::NOT:
-      return Builder.CreateNot(operand, "neg");
+    case UnOp::NOT: {
+      operand = Builder.CreateIntCast(operand, Type::getInt1Ty(TheContext), true);
+      Value* temp = Builder.CreateNot(operand, "neg");
+      return Builder.CreateZExt(temp, i8);
+    }
 
     default:
       return nullptr;
@@ -2212,11 +2221,11 @@ Value* Program::codegen() {
 
   Builder.CreateRet(c32(0));
 
-  bool invalid = verifyModule(*TheModule, &errs());
+/*  bool invalid = verifyModule(*TheModule, &errs());
   if (invalid) {
     std::cerr << "Invalid IR" << std::endl;
     exit(1);
-  }
+  }*/
  
   // Optional optimization
   if (this->optimize)

@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 
 //------------------------------------------------------------//
@@ -79,6 +80,10 @@ void readString(int32_t size, char* s) {
   if(!fgets(s, size, stdin)) {
     printf("Error reading input\n");
     exit(1);
+  } else {
+    char *pos = strchr(s, '\n');
+    if (pos)
+      *pos = '\0';
   }
 }
 

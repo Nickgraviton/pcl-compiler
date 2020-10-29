@@ -210,23 +210,6 @@ bool compatible_types(type_ptr left, type_ptr right) {
       // Integer can be assigned to real
 
       return true;
-    } else if (left_basic_type == BasicType::Pointer && right_basic_type == BasicType::Pointer) {
-      // Pointers to Arrays can be assigned to pointers to IArrays
-
-      auto left_ptr_type = std::static_pointer_cast<PtrType>(left);
-      auto right_ptr_type = std::static_pointer_cast<PtrType>(right);
-      
-      if (!left_ptr_type->get_subtype()->is(BasicType::IArray)
-          || !right_ptr_type->get_subtype()->is(BasicType::Array))
-        return false;
-
-      auto left_arr_type = std::static_pointer_cast<IArrType>(left_ptr_type->get_subtype());
-      auto right_arr_type = std::static_pointer_cast<ArrType>(right_ptr_type->get_subtype());
-
-      auto left_subtype = left_arr_type->get_subtype();
-      auto right_subtype = right_arr_type->get_subtype();
-
-      return same_type(left_subtype, right_subtype);
     } else if (left_basic_type == BasicType::IArray && right_basic_type == BasicType::Array) {
       // Arrays can be assigned to IArrays when passed by reference
 
@@ -243,6 +226,27 @@ bool compatible_types(type_ptr left, type_ptr right) {
       return false;
     }
   } else {
-    return same_type(left, right);
+    if (left_basic_type == BasicType::Pointer && right_basic_type == BasicType::Pointer) {
+      // Pointers to Arrays can be assigned to pointers to IArrays
+
+      auto left_ptr_type = std::static_pointer_cast<PtrType>(left);
+      auto right_ptr_type = std::static_pointer_cast<PtrType>(right);
+
+      if (left_ptr_type->get_subtype() != nullptr && left_ptr_type->get_subtype()->is(BasicType::IArray)
+          && right_ptr_type->get_subtype() != nullptr && right_ptr_type->get_subtype()->is(BasicType::Array)) {
+
+        auto left_arr_type = std::static_pointer_cast<IArrType>(left_ptr_type->get_subtype());
+        auto right_arr_type = std::static_pointer_cast<ArrType>(right_ptr_type->get_subtype());
+
+        auto left_subtype = left_arr_type->get_subtype();
+        auto right_subtype = right_arr_type->get_subtype();
+
+        return same_type(left_subtype, right_subtype);
+      } else {
+        return same_type(left, right);
+      }
+    } else {
+      return same_type(left, right);
+    }
   }
 }
