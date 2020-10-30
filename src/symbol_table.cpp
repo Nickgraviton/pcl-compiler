@@ -130,11 +130,24 @@ bool SymbolTable::insert(std::string name, entry_ptr entry) {
   return this->scopes.back().insert(name, entry);
 }
 
+void SymbolTable::insert_lib_fun(std::string name, entry_ptr entry) { 
+  this->lib_funs[name] = entry;
+}
+
 entry_ptr SymbolTable::lookup(std::string name) {
   for (auto r_it = std::rbegin(this->scopes); r_it != std::rend(this->scopes); ++r_it) {
     auto result = r_it->lookup(name);
     if (result)
       return result;
   }
+
+  auto it = this->lib_funs.find(name);
+  if (it != this->lib_funs.end())
+    return this->lib_funs[name];
+
   return nullptr;
+}
+
+entry_ptr SymbolTable::current_scope_lookup(std::string name) {
+  return this->scopes.back().lookup(name);
 }

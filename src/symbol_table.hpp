@@ -78,11 +78,13 @@ public:
   std::shared_ptr<Entry> lookup(std::string name);
 };
 
-// Synbol table
+// Symbol table
 // scopes: scopes are implemented by a vector. Each time we enter a deeper scope we push back a scope
 //         and each time we exit one we pop it
+// lib_funs: separate map for built in functions
 class SymbolTable {
   std::vector<SymbolScope> scopes;
+  std::map<std::string, std::shared_ptr<Entry>> lib_funs;
 
 public:
   int get_nesting_level();
@@ -95,7 +97,10 @@ public:
   bool has_label(std::string label);
 
   bool insert(std::string name, std::shared_ptr<Entry> entry);
+  void insert_lib_fun(std::string name, std::shared_ptr<Entry> entry);
+
   std::shared_ptr<Entry> lookup(std::string name);
+  std::shared_ptr<Entry> current_scope_lookup(std::string name);
 };
 
 #endif

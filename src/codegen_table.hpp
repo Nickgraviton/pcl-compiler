@@ -70,8 +70,10 @@ public:
 // Codegen table
 // scopes: scopes are implemented by a vector. Each time we enter a deeper scope we push back a scope
 //         and each time we exit one we pop it
+// lib_fun_map: separate map for built in library functions
 class CodegenTable {
   std::vector<CodegenScope> scopes;
+  std::map<std::string, std::shared_ptr<FunDef>> lib_fun_map;
 
 public:
   int get_nesting_level();
@@ -82,10 +84,12 @@ public:
   void insert_var(std::string name, llvm::Value* alloca);
   void insert_label(std::string name, llvm::BasicBlock* block);
   void insert_fun(std::string name, std::shared_ptr<FunDef> fun);
+  void insert_lib_fun(std::string name, std::shared_ptr<FunDef> fun);
 
   llvm::Value* lookup_var(std::string name);
   llvm::BasicBlock* lookup_label(std::string name);
   std::shared_ptr<FunDef> lookup_fun(std::string name);
+  std::shared_ptr<FunDef> current_scope_lookup_fun(std::string name);
 
   std::string reverse_lookup_fun(llvm::Function* F);
 };

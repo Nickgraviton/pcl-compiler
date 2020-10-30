@@ -452,39 +452,39 @@ static void semantic_library_functions() {
   auto fun_entry = std::make_shared<FunctionEntry>(false, nullptr);
   auto parameter = std::make_pair(false, std::make_shared<VariableEntry>(std::make_shared<IntType>()));
   fun_entry->add_parameter(parameter);
-  symbol_table.insert("writeInteger", fun_entry);
+  symbol_table.insert_lib_fun("writeInteger", fun_entry);
 
   fun_entry = std::make_shared<FunctionEntry>(false, nullptr);
   parameter = std::make_pair(false, std::make_shared<VariableEntry>(std::make_shared<BoolType>()));
   fun_entry->add_parameter(parameter);
-  symbol_table.insert("writeBoolean", fun_entry);
+  symbol_table.insert_lib_fun("writeBoolean", fun_entry);
 
   fun_entry = std::make_shared<FunctionEntry>(false, nullptr);
   parameter = std::make_pair(false, std::make_shared<VariableEntry>(std::make_shared<CharType>()));
   fun_entry->add_parameter(parameter);
-  symbol_table.insert("writeChar", fun_entry);
+  symbol_table.insert_lib_fun("writeChar", fun_entry);
 
   fun_entry = std::make_shared<FunctionEntry>(false, nullptr);
   parameter = std::make_pair(false, std::make_shared<VariableEntry>(std::make_shared<RealType>()));
   fun_entry->add_parameter(parameter);
-  symbol_table.insert("writeReal", fun_entry);
+  symbol_table.insert_lib_fun("writeReal", fun_entry);
 
   fun_entry = std::make_shared<FunctionEntry>(false, nullptr);
   parameter = std::make_pair(true, std::make_shared<VariableEntry>(std::make_shared<IArrType>(std::make_shared<CharType>())));
   fun_entry->add_parameter(parameter);
-  symbol_table.insert("writeString", fun_entry);
+  symbol_table.insert_lib_fun("writeString", fun_entry);
 
   fun_entry = std::make_shared<FunctionEntry>(false, std::make_shared<IntType>());
-  symbol_table.insert("readInteger", fun_entry);
+  symbol_table.insert_lib_fun("readInteger", fun_entry);
 
   fun_entry = std::make_shared<FunctionEntry>(false, std::make_shared<BoolType>());
-  symbol_table.insert("readBoolean", fun_entry);
+  symbol_table.insert_lib_fun("readBoolean", fun_entry);
 
   fun_entry = std::make_shared<FunctionEntry>(false, std::make_shared<CharType>());
-  symbol_table.insert("readChar", fun_entry);
+  symbol_table.insert_lib_fun("readChar", fun_entry);
 
   fun_entry = std::make_shared<FunctionEntry>(false, std::make_shared<RealType>());
-  symbol_table.insert("readReal", fun_entry);
+  symbol_table.insert_lib_fun("readReal", fun_entry);
 
   fun_entry = std::make_shared<FunctionEntry>(false, nullptr);
   parameter = std::make_pair(false, std::make_shared<VariableEntry>(std::make_shared<IntType>()));
@@ -492,75 +492,75 @@ static void semantic_library_functions() {
 
   parameter = std::make_pair(true, std::make_shared<VariableEntry>(std::make_shared<IArrType>(std::make_shared<CharType>())));
   fun_entry->add_parameter(parameter);
-  symbol_table.insert("readString", fun_entry);
+  symbol_table.insert_lib_fun("readString", fun_entry);
 
   fun_entry = std::make_shared<FunctionEntry>(false, std::make_shared<IntType>());
   parameter = std::make_pair(false, std::make_shared<VariableEntry>(std::make_shared<IntType>()));
   fun_entry->add_parameter(parameter);
-  symbol_table.insert("abs", fun_entry);
+  symbol_table.insert_lib_fun("abs", fun_entry);
 
   fun_entry = std::make_shared<FunctionEntry>(false, std::make_shared<RealType>());
   parameter = std::make_pair(false, std::make_shared<VariableEntry>(std::make_shared<RealType>()));
   fun_entry->add_parameter(parameter);
-  symbol_table.insert("fabs", fun_entry);
+  symbol_table.insert_lib_fun("fabs", fun_entry);
 
   fun_entry = std::make_shared<FunctionEntry>(false, std::make_shared<RealType>());
   parameter = std::make_pair(false, std::make_shared<VariableEntry>(std::make_shared<RealType>()));
   fun_entry->add_parameter(parameter);
-  symbol_table.insert("sqrt", fun_entry);
+  symbol_table.insert_lib_fun("sqrt", fun_entry);
 
   fun_entry = std::make_shared<FunctionEntry>(false, std::make_shared<RealType>());
   parameter = std::make_pair(false, std::make_shared<VariableEntry>(std::make_shared<RealType>()));
   fun_entry->add_parameter(parameter);
-  symbol_table.insert("sin", fun_entry);
+  symbol_table.insert_lib_fun("sin", fun_entry);
 
   fun_entry = std::make_shared<FunctionEntry>(false, std::make_shared<RealType>());
   parameter = std::make_pair(false, std::make_shared<VariableEntry>(std::make_shared<RealType>()));
   fun_entry->add_parameter(parameter);
-  symbol_table.insert("cos", fun_entry);
+  symbol_table.insert_lib_fun("cos", fun_entry);
 
   fun_entry = std::make_shared<FunctionEntry>(false, std::make_shared<RealType>());
   parameter = std::make_pair(false, std::make_shared<VariableEntry>(std::make_shared<RealType>()));
   fun_entry->add_parameter(parameter);
-  symbol_table.insert("tan", fun_entry);
+  symbol_table.insert_lib_fun("tan", fun_entry);
 
   fun_entry = std::make_shared<FunctionEntry>(false, std::make_shared<RealType>());
   parameter = std::make_pair(false, std::make_shared<VariableEntry>(std::make_shared<RealType>()));
   fun_entry->add_parameter(parameter);
-  symbol_table.insert("arctan", fun_entry);
+  symbol_table.insert_lib_fun("arctan", fun_entry);
 
   fun_entry = std::make_shared<FunctionEntry>(false, std::make_shared<RealType>());
   parameter = std::make_pair(false, std::make_shared<VariableEntry>(std::make_shared<RealType>()));
   fun_entry->add_parameter(parameter);
-  symbol_table.insert("exp", fun_entry);
+  symbol_table.insert_lib_fun("exp", fun_entry);
 
   fun_entry = std::make_shared<FunctionEntry>(false, std::make_shared<RealType>());
   parameter = std::make_pair(false, std::make_shared<VariableEntry>(std::make_shared<RealType>()));
   fun_entry->add_parameter(parameter);
-  symbol_table.insert("ln", fun_entry);
+  symbol_table.insert_lib_fun("ln", fun_entry);
 
   fun_entry = std::make_shared<FunctionEntry>(false, std::make_shared<RealType>());
-  symbol_table.insert("pi", fun_entry);
+  symbol_table.insert_lib_fun("pi", fun_entry);
 
   fun_entry = std::make_shared<FunctionEntry>(false, std::make_shared<IntType>());
   parameter = std::make_pair(false, std::make_shared<VariableEntry>(std::make_shared<RealType>()));
   fun_entry->add_parameter(parameter);
-  symbol_table.insert("trunc", fun_entry);
+  symbol_table.insert_lib_fun("trunc", fun_entry);
 
   fun_entry = std::make_shared<FunctionEntry>(false, std::make_shared<IntType>());
   parameter = std::make_pair(false, std::make_shared<VariableEntry>(std::make_shared<RealType>()));
   fun_entry->add_parameter(parameter);
-  symbol_table.insert("round", fun_entry);
+  symbol_table.insert_lib_fun("round", fun_entry);
 
   fun_entry = std::make_shared<FunctionEntry>(false, std::make_shared<IntType>());
   parameter = std::make_pair(false, std::make_shared<VariableEntry>(std::make_shared<CharType>()));
   fun_entry->add_parameter(parameter);
-  symbol_table.insert("ord", fun_entry);
+  symbol_table.insert_lib_fun("ord", fun_entry);
 
   fun_entry = std::make_shared<FunctionEntry>(false, std::make_shared<CharType>());
   parameter = std::make_pair(false, std::make_shared<VariableEntry>(std::make_shared<IntType>()));
   fun_entry->add_parameter(parameter);
-  symbol_table.insert("chr", fun_entry);
+  symbol_table.insert_lib_fun("chr", fun_entry);
 }
 
 // Helper error function
@@ -917,7 +917,7 @@ void Body::semantic() {
 void Fun::semantic() {
   // Check if function entry exists in the symbol table and if it does make sure that functions
   // with bodies are allowed only if the already existing entry belongs to a forward declaration 
-  auto entry = symbol_table.lookup(this->fun_name);
+  auto entry = symbol_table.current_scope_lookup(this->fun_name);
   if (entry) {
     auto function_entry = std::dynamic_pointer_cast<FunctionEntry>(entry);
     if (!function_entry)
@@ -1146,7 +1146,7 @@ static void codegen_library_functions() {
   FT = FunctionType::get(ret_type, args, false);
   F = Function::Create(FT, Function::ExternalLinkage, "writeInteger", TheModule.get());
 
-  codegen_table.insert_fun("writeInteger",
+  codegen_table.insert_lib_fun("writeInteger",
       std::make_shared<FunDef>(ret_type, parameters, F));
 
   ret_type = Type::getVoidTy(TheContext);
@@ -1155,7 +1155,7 @@ static void codegen_library_functions() {
   FT = FunctionType::get(ret_type, args, false);
   F = Function::Create(FT, Function::ExternalLinkage, "writeBoolean", TheModule.get());
 
-  codegen_table.insert_fun("writeBoolean",
+  codegen_table.insert_lib_fun("writeBoolean",
       std::make_shared<FunDef>(ret_type, parameters, F));
 
   ret_type = Type::getVoidTy(TheContext);
@@ -1164,7 +1164,7 @@ static void codegen_library_functions() {
   FT = FunctionType::get(ret_type, args, false);
   F = Function::Create(FT, Function::ExternalLinkage, "writeChar", TheModule.get());
 
-  codegen_table.insert_fun("writeChar",
+  codegen_table.insert_lib_fun("writeChar",
       std::make_shared<FunDef>(ret_type, parameters, F));
 
   ret_type = Type::getVoidTy(TheContext);
@@ -1173,7 +1173,7 @@ static void codegen_library_functions() {
   FT = FunctionType::get(ret_type, args, false);
   F = Function::Create(FT, Function::ExternalLinkage, "writeReal", TheModule.get());
 
-  codegen_table.insert_fun("writeReal",
+  codegen_table.insert_lib_fun("writeReal",
       std::make_shared<FunDef>(ret_type, parameters, F));
 
   ret_type = Type::getVoidTy(TheContext);
@@ -1182,7 +1182,7 @@ static void codegen_library_functions() {
   FT = FunctionType::get(ret_type, args, false);
   F = Function::Create(FT, Function::ExternalLinkage, "writeString", TheModule.get());
 
-  codegen_table.insert_fun("writeString",
+  codegen_table.insert_lib_fun("writeString",
       std::make_shared<FunDef>(ret_type, parameters, F));
 
   ret_type = i32;
@@ -1191,7 +1191,7 @@ static void codegen_library_functions() {
   FT = FunctionType::get(ret_type, args, false);
   F = Function::Create(FT, Function::ExternalLinkage, "readInteger", TheModule.get());
 
-  codegen_table.insert_fun("readInteger",
+  codegen_table.insert_lib_fun("readInteger",
       std::make_shared<FunDef>(ret_type, parameters, F));
 
   ret_type = i8;
@@ -1200,7 +1200,7 @@ static void codegen_library_functions() {
   FT = FunctionType::get(ret_type, args, false);
   F = Function::Create(FT, Function::ExternalLinkage, "readBoolean", TheModule.get());
 
-  codegen_table.insert_fun("readBoolean",
+  codegen_table.insert_lib_fun("readBoolean",
       std::make_shared<FunDef>(ret_type, parameters, F));
 
   ret_type = i8;
@@ -1209,7 +1209,7 @@ static void codegen_library_functions() {
   FT = FunctionType::get(ret_type, args, false);
   F = Function::Create(FT, Function::ExternalLinkage, "readChar", TheModule.get());
 
-  codegen_table.insert_fun("readChar",
+  codegen_table.insert_lib_fun("readChar",
       std::make_shared<FunDef>(ret_type, parameters, F));
 
   ret_type = Type::getVoidTy(TheContext);
@@ -1218,7 +1218,7 @@ static void codegen_library_functions() {
   FT = FunctionType::get(ret_type, args, false);
   F = Function::Create(FT, Function::ExternalLinkage, "readString", TheModule.get());
 
-  codegen_table.insert_fun("readString",
+  codegen_table.insert_lib_fun("readString",
       std::make_shared<FunDef>(ret_type, parameters, F));
 
   ret_type = i32;
@@ -1227,7 +1227,7 @@ static void codegen_library_functions() {
   FT = FunctionType::get(ret_type, args, false);
   F = Function::Create(FT, Function::ExternalLinkage, "abs", TheModule.get());
 
-  codegen_table.insert_fun("abs",
+  codegen_table.insert_lib_fun("abs",
       std::make_shared<FunDef>(ret_type, parameters, F));
 
   ret_type = f64;
@@ -1236,7 +1236,7 @@ static void codegen_library_functions() {
   FT = FunctionType::get(ret_type, args, false);
   F = Function::Create(FT, Function::ExternalLinkage, "fabs", TheModule.get());
 
-  codegen_table.insert_fun("fabs",
+  codegen_table.insert_lib_fun("fabs",
       std::make_shared<FunDef>(ret_type, parameters, F));
 
   ret_type = f64;
@@ -1245,7 +1245,7 @@ static void codegen_library_functions() {
   FT = FunctionType::get(ret_type, args, false);
   F = Function::Create(FT, Function::ExternalLinkage, "sqrt", TheModule.get());
 
-  codegen_table.insert_fun("sqrt",
+  codegen_table.insert_lib_fun("sqrt",
       std::make_shared<FunDef>(ret_type, parameters, F));
 
   ret_type = f64;
@@ -1254,7 +1254,7 @@ static void codegen_library_functions() {
   FT = FunctionType::get(ret_type, args, false);
   F = Function::Create(FT, Function::ExternalLinkage, "sin", TheModule.get());
 
-  codegen_table.insert_fun("sin",
+  codegen_table.insert_lib_fun("sin",
       std::make_shared<FunDef>(ret_type, parameters, F));
 
   ret_type = f64;
@@ -1263,7 +1263,7 @@ static void codegen_library_functions() {
   FT = FunctionType::get(ret_type, args, false);
   F = Function::Create(FT, Function::ExternalLinkage, "cos", TheModule.get());
 
-  codegen_table.insert_fun("cos",
+  codegen_table.insert_lib_fun("cos",
       std::make_shared<FunDef>(ret_type, parameters, F));
 
   ret_type = f64;
@@ -1272,7 +1272,7 @@ static void codegen_library_functions() {
   FT = FunctionType::get(ret_type, args, false);
   F = Function::Create(FT, Function::ExternalLinkage, "tan", TheModule.get());
 
-  codegen_table.insert_fun("tan",
+  codegen_table.insert_lib_fun("tan",
       std::make_shared<FunDef>(ret_type, parameters, F));
 
   ret_type = f64;
@@ -1281,7 +1281,7 @@ static void codegen_library_functions() {
   FT = FunctionType::get(ret_type, args, false);
   F = Function::Create(FT, Function::ExternalLinkage, "arctan", TheModule.get());
 
-  codegen_table.insert_fun("arctan",
+  codegen_table.insert_lib_fun("arctan",
       std::make_shared<FunDef>(ret_type, parameters, F));
 
   ret_type = f64;
@@ -1290,7 +1290,7 @@ static void codegen_library_functions() {
   FT = FunctionType::get(ret_type, args, false);
   F = Function::Create(FT, Function::ExternalLinkage, "exp", TheModule.get());
 
-  codegen_table.insert_fun("exp",
+  codegen_table.insert_lib_fun("exp",
       std::make_shared<FunDef>(ret_type, parameters, F));
 
   ret_type = f64;
@@ -1299,7 +1299,7 @@ static void codegen_library_functions() {
   FT = FunctionType::get(ret_type, args, false);
   F = Function::Create(FT, Function::ExternalLinkage, "ln", TheModule.get());
 
-  codegen_table.insert_fun("ln",
+  codegen_table.insert_lib_fun("ln",
       std::make_shared<FunDef>(ret_type, parameters, F));
 
   ret_type = f64;
@@ -1308,7 +1308,7 @@ static void codegen_library_functions() {
   FT = FunctionType::get(ret_type, args, false);
   F = Function::Create(FT, Function::ExternalLinkage, "pi", TheModule.get());
 
-  codegen_table.insert_fun("pi",
+  codegen_table.insert_lib_fun("pi",
       std::make_shared<FunDef>(ret_type, parameters, F));
 
   ret_type = i32;
@@ -1317,7 +1317,7 @@ static void codegen_library_functions() {
   FT = FunctionType::get(ret_type, args, false);
   F = Function::Create(FT, Function::ExternalLinkage, "trunc_", TheModule.get());
 
-  codegen_table.insert_fun("trunc",
+  codegen_table.insert_lib_fun("trunc",
       std::make_shared<FunDef>(ret_type, parameters, F));
 
   ret_type = i32;
@@ -1326,7 +1326,7 @@ static void codegen_library_functions() {
   FT = FunctionType::get(ret_type, args, false);
   F = Function::Create(FT, Function::ExternalLinkage, "round_", TheModule.get());
 
-  codegen_table.insert_fun("round",
+  codegen_table.insert_lib_fun("round",
       std::make_shared<FunDef>(ret_type, parameters, F));
 
   ret_type = i32;
@@ -1335,7 +1335,7 @@ static void codegen_library_functions() {
   FT = FunctionType::get(ret_type, args, false);
   F = Function::Create(FT, Function::ExternalLinkage, "ord", TheModule.get());
 
-  codegen_table.insert_fun("ord",
+  codegen_table.insert_lib_fun("ord",
       std::make_shared<FunDef>(ret_type, parameters, F));
 
   ret_type = i8;
@@ -1344,7 +1344,7 @@ static void codegen_library_functions() {
   FT = FunctionType::get(ret_type, args, false);
   F = Function::Create(FT, Function::ExternalLinkage, "chr", TheModule.get());
 
-  codegen_table.insert_fun("chr",
+  codegen_table.insert_lib_fun("chr",
       std::make_shared<FunDef>(ret_type, parameters, F));
 
   ret_type = i8->getPointerTo();
@@ -1353,7 +1353,7 @@ static void codegen_library_functions() {
   FT = FunctionType::get(ret_type, args, false);
   F = Function::Create(FT, Function::ExternalLinkage, "malloc_", TheModule.get());
 
-  codegen_table.insert_fun("malloc",
+  codegen_table.insert_lib_fun("malloc",
       std::make_shared<FunDef>(ret_type, parameters, F));
 
   ret_type = Type::getVoidTy(TheContext);
@@ -1362,7 +1362,7 @@ static void codegen_library_functions() {
   FT = FunctionType::get(ret_type, args, false);
   F = Function::Create(FT, Function::ExternalLinkage, "free", TheModule.get());
 
-  codegen_table.insert_fun("free",
+  codegen_table.insert_lib_fun("free",
       std::make_shared<FunDef>(ret_type, parameters, F));
 }
 
@@ -1983,7 +1983,7 @@ Value* Fun::codegen() {
   this->prev_scope_vars = ni.prev_scope_vars;
 
   // Create function only once
-  if (!codegen_table.lookup_fun(this->fun_name)) {
+  if (!codegen_table.current_scope_lookup_fun(this->fun_name)) {
     std::vector<Type*> args;
 
     // Collect previous scope variables and put them inside nested structs
@@ -2221,11 +2221,11 @@ Value* Program::codegen() {
 
   Builder.CreateRet(c32(0));
 
-/*  bool invalid = verifyModule(*TheModule, &errs());
+  bool invalid = verifyModule(*TheModule, &errs());
   if (invalid) {
     std::cerr << "Invalid IR" << std::endl;
     exit(1);
-  }*/
+  }
  
   // Optional optimization
   if (this->optimize)

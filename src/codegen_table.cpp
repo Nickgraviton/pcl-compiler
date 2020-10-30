@@ -115,6 +115,10 @@ void CodegenTable::insert_fun(std::string name, std::shared_ptr<FunDef> fun) {
   this->scopes.back().insert_fun(name, fun);
 }
 
+void CodegenTable::insert_lib_fun(std::string name, std::shared_ptr<FunDef> fun) {
+  this->lib_fun_map[name] = fun;
+}
+
 Value* CodegenTable::lookup_var(std::string name) {
   return this->scopes.back().lookup_var(name);
 }
@@ -129,7 +133,16 @@ std::shared_ptr<FunDef> CodegenTable::lookup_fun(std::string name) {
     if (result)
       return result;
   }
+
+  auto it = this->lib_fun_map.find(name);
+  if (it != this->lib_fun_map.end())
+    return this->lib_fun_map[name];
+ 
   return nullptr;
+}
+
+std::shared_ptr<FunDef> CodegenTable::current_scope_lookup_fun(std::string name) {
+  return this->scopes.back().lookup_fun(name);
 }
 
 std::string CodegenTable::reverse_lookup_fun(Function* F) {
