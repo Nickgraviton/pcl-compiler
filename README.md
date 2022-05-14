@@ -3,37 +3,40 @@ Compiler implemented in C++ using flex, bison, llvm and clang. A toy compiler  f
 
 ## Project structure
 ```
-|-- compile.sh
-|-- data
-|   |-- bsort.pcl
-|   |-- hanoi.pcl
-|   |-- mean.pcl
-|   |-- new_dispose.pcl
-|   |-- primes.pcl
-|   `-- reverse.pcl
-|-- pcl2019.pdf
-|-- README.md
-`-- src
-    |-- ast.cpp
-    |-- ast.hpp
-    |-- codegen_table.cpp
-    |-- codegen_table.hpp
-    |-- lexer.hpp
-    |-- lexer.l
-    |-- libpcl.c
-    |-- Makefile
-    |-- parser.y
-    |-- pcl.cpp
-    |-- symbol_table.cpp
-    |-- symbol_table.hpp
-    |-- types.cpp
-    `-- types.hpp
+├── compile.sh
+├── data
+│   ├── bsort.pcl
+│   ├── hanoi.pcl
+│   ├── mandelbrot.pcl
+│   ├── mean.pcl
+│   ├── new_dispose.pcl
+│   ├── primes.pcl
+│   └── reverse.pcl
+├── Dockerfile
+├── pcl2019.pdf
+├── README.md
+└── src
+    ├── ast.cpp
+    ├── ast.hpp
+    ├── codegen_table.cpp
+    ├── codegen_table.hpp
+    ├── lexer.hpp
+    ├── lexer.l
+    ├── libpcl.c
+    ├── Makefile
+    ├── parser.y
+    ├── pcl.cpp
+    ├── symbol_table.cpp
+    ├── symbol_table.hpp
+    ├── types.cpp
+    └── types.hpp
 ```
 Root directory:
 
 - `compile.sh:` Simple helper script that takes the file to be compiled as input, builds the compiler
 and outputs an executable named `a.out`
 - `data:` The data folder contains some basic example programs in pcl
+- `Dockerfile:` Dockerfile with instructions on how to build the compiler image
 - `pcl2019.pdf:` This file contains the language description
 - `README.md:` This file
 - `src:` The source files for the compiler
